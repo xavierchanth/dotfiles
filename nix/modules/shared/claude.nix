@@ -17,29 +17,12 @@
     "$schema" = "https://json.schemastore.org/claude-code-settings.json";
     includeCoAuthoredBy = false;
     model = "opus";
-    permissions = {
-      defaultMode = "auto";
-      deny = [
-        "Artifact"
-        "PushNotification"
-        "RemoteTrigger"
-        "mcp__*"
-      ];
-    };
-    disableAgentView = true;
-    disableAllHooks = true;
-    disableArtifact = true;
-    disableClaudeAiConnectors = true;
+    permissions.defaultMode = "auto";
     disableRemoteControl = true;
-    disableWorkflows = true;
-    agentPushNotifEnabled = false;
     autoMemoryEnabled = false;
-    autoUploadSessions = false;
-    inputNeededNotifEnabled = false;
     remoteControlAtStartup = false;
     env = {
       CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY = "1";
-      CLAUDE_CODE_SKIP_PLUGIN_MCP_SERVERS = "1";
       DISABLE_ERROR_REPORTING = "1";
     };
     sandbox = {
@@ -93,7 +76,20 @@ in {
     # Remove settings that this module previously managed but intentionally retired.
     tmp="$(mktemp "$settings.XXXXXX")"
     if ${pkgs.jq}/bin/jq -s \
-      '(.[0] | del(.env.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC, .env.DISABLE_TELEMETRY)) * .[1]' \
+      '(.[0] | del(
+        .permissions.deny,
+        .disableAgentView,
+        .disableAllHooks,
+        .disableArtifact,
+        .disableClaudeAiConnectors,
+        .disableWorkflows,
+        .agentPushNotifEnabled,
+        .autoUploadSessions,
+        .inputNeededNotifEnabled,
+        .env.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC,
+        .env.CLAUDE_CODE_SKIP_PLUGIN_MCP_SERVERS,
+        .env.DISABLE_TELEMETRY
+      )) * .[1]' \
       "$settings" ${managedSettingsFile} >"$tmp"; then
       mv "$tmp" "$settings"
     else
