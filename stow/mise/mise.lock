@@ -1201,10 +1201,6 @@ backend = "npm:playwright"
 version = "3.9.6"
 backend = "npm:prettier"
 
-[[tools."npm:svelte-language-server"]]
-version = "0.18.3"
-backend = "npm:svelte-language-server"
-
 [[tools."npm:vscode-langservers-extracted"]]
 version = "4.10.0"
 backend = "npm:vscode-langservers-extracted"
