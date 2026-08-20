@@ -21,6 +21,7 @@
     gzip
     openssh
     patch
+    perl
     unzip
     wget
     which
