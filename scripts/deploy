@@ -107,7 +107,7 @@ routine() {
   nix eval --json --no-write-lock-file "$DEPLOY_FLAKE#deploy.nodes.$host" >/dev/null
   if [[ $mode == switch || $mode == test ]]; then needs_credential "$host" && stage "$host"; fi
   [[ $mode == switch ]] || flag=("--$mode")
-  if "$DEPLOY_RS" "${flag[@]}" --skip-checks --remote-build "$DEPLOY_FLAKE#$host"; then
+  if "$DEPLOY_SUPERVISOR" "$DEPLOY_RS" "${flag[@]}" --skip-checks --remote-build "$DEPLOY_FLAKE#$host"; then
     if [[ $mode == switch || $mode == test ]] && needs_credential "$host"; then unstage "$host"; fi
   else
     status=$?; if [[ $mode == switch || $mode == test ]] && needs_credential "$host"; then unstage "$host"; fi; return "$status"

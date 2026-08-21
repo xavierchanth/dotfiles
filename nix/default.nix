@@ -145,11 +145,16 @@
       ${builtins.readFile ../scripts/openwrt-apply-charon}
     ''; };
     deploy-inventory = pkgs.writeText "deploy-inventory.tsv" deployInventory;
+    deploy-supervisor = pkgs.writeScript "deploy-supervisor" ''
+      #!${pkgs.python3}/bin/python3
+      ${builtins.readFile ../scripts/deploy-supervisor.py}
+    '';
     lab-update = pkgs.writeShellApplication { name = "lab-update"; runtimeInputs = [ pkgs.bash pkgs.coreutils pkgs.gnused pkgs.gnugrep pkgs.gawk pkgs.perl pkgs.openssh pkgs.jujutsu pkgs.gnutar pkgs.nix ]; excludeShellChecks = [ "SC2016" ]; text = builtins.readFile ../bin/shared/lab-update; };
     deploy-cli = pkgs.writeShellApplication { name = "deploy"; runtimeInputs = [ pkgs.bash pkgs.coreutils pkgs.openssh pkgs.nix pkgs.jujutsu pkgs.gh ]; text = ''
       export DEPLOY_FLAKE=${lib.escapeShellArg (toString flakeSource)}
       export DEPLOY_INVENTORY=${lib.escapeShellArg (toString deploy-inventory)}
       export DEPLOY_RS=${lib.escapeShellArg "${deploy-rs.packages.${system}.default}/bin/deploy"}
+      export DEPLOY_SUPERVISOR=${lib.escapeShellArg "${deploy-supervisor}"}
       export LAB_UPDATE=${lib.escapeShellArg "${lab-update}/bin/lab-update"}
       ${builtins.readFile ../scripts/deploy}
     ''; };
@@ -166,12 +171,13 @@ in builtins.seq checked (builtins.seq deployValidation {
   homeConfigurations = builtins.listToAttrs (map (hostname: { name = "${username}@${hostname}"; value = mkHome hostname; }) (builtins.attrNames supportedHomeHosts));
   checks = lib.recursiveUpdate
     (lib.genAttrs systems (system: let pkgs = pkgsFor system; in {
-      deploy-invariants = pkgs.runCommand "deploy-invariant-tests" { nativeBuildInputs = [ pkgs.bash pkgs.coreutils pkgs.gnugrep pkgs.gnused deploy-rs.packages.${system}.default ]; DEPLOY_SCRIPT = ../scripts/deploy; CONSUMER_SCRIPT = ../scripts/consume-deploy-credential; DEPLOY_RS_REAL = "${deploy-rs.packages.${system}.default}/bin/deploy"; } ''
-        TEST_BASH=${pkgs.bash}/bin/bash ${pkgs.bash}/bin/bash ${../tests/deploy.sh}
+      deploy-invariants = pkgs.runCommand "deploy-invariant-tests" { nativeBuildInputs = [ pkgs.bash pkgs.coreutils pkgs.gnugrep pkgs.gnused pkgs.python3 deploy-rs.packages.${system}.default ]; DEPLOY_SCRIPT = ../scripts/deploy; CONSUMER_SCRIPT = ../scripts/consume-deploy-credential; DEPLOY_RS_REAL = "${deploy-rs.packages.${system}.default}/bin/deploy"; } ''
+        DEPLOY_SUPERVISOR=${allPackages.${system}.deploy-supervisor} TEST_BASH=${pkgs.bash}/bin/bash ${pkgs.bash}/bin/bash ${../tests/deploy.sh}
+        ${pkgs.python3}/bin/python3 ${../tests/deploy-supervisor.py} ${allPackages.${system}.deploy-supervisor}
         # Exercise every wrapper mode against the pinned parser. The invalid local
         # flake fails before any SSH can be attempted.
         for mode in dry-activate test boot; do
-          if "$DEPLOY_RS_REAL" "--$mode" --skip-checks --remote-build /nonexistent-deploy-parser-test#node >"parser-$mode.log" 2>&1; then exit 1; fi
+          if ${allPackages.${system}.deploy-supervisor} "$DEPLOY_RS_REAL" "--$mode" --skip-checks --remote-build /nonexistent-deploy-parser-test#node >"parser-$mode.log" 2>&1; then exit 1; fi
           ! grep -Eqi 'unexpected argument|unknown (argument|option)|unrecognized option' "parser-$mode.log"
         done
         touch $out
