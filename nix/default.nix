@@ -108,17 +108,27 @@
      assert openwrtProfiles ? ${charon.profile};
      assert openwrtProfiles.${charon.profile}.managesPrivateDns && openwrtProfiles.${charon.profile}.attendedOnly;
      assert lib.all (name: inventory.${name}.lab.deploy or false) deployed; true;
-  checked = builtins.deepSeq validKinds (assert resolverTests; assert profileTests; assert codingValidation; assert inventoryValidation; true);
+  darwinServerValidation = let
+    eris = (mkDarwin "eris").config;
+  in assert eris.services.openssh.enable == true;
+     assert eris.services.tailscale.enable == true && eris.services.tailscale.overrideLocalDns == false;
+     assert eris.system.defaults.loginwindow.autoLoginUser == null;
+     assert !(builtins.elem "tailscale-app" eris.homebrew.casks);
+     true;
+  checked = builtins.deepSeq validKinds (assert resolverTests; assert profileTests; assert codingValidation; assert inventoryValidation; assert darwinServerValidation; true);
   systems = [ "aarch64-darwin" "x86_64-darwin" "aarch64-linux" "x86_64-linux" ];
-  deployNodes = attrs deployNames (name: let host = inventory.${name}; in {
-    hostname = name;
+  deployNodes = attrs deployNames (name: let
+    host = inventory.${name};
+    route = host.deployment or {};
+  in {
+    hostname = route.targetAddress or name;
     sshUser = username;
     groups = [ "lab" ];
     remoteBuild = true;
     interactiveSudo = true;
     autoRollback = true;
     magicRollback = host.kind == "nixos"; # deploy-rs' inotify rollback is not portable to Darwin.
-    sshOpts = [ "-o" "ControlMaster=no" "-o" "ControlPath=none" "-o" "ServerAliveInterval=5" "-o" "ServerAliveCountMax=3" "-o" "ConnectTimeout=10" ];
+    sshOpts = [ "-o" "ControlMaster=no" "-o" "ControlPath=none" "-o" "ServerAliveInterval=5" "-o" "ServerAliveCountMax=3" "-o" "ConnectTimeout=10" ] ++ lib.optionals (route ? proxyJump) [ "-o" "ProxyJump=${route.proxyJump}" ];
     activationTimeout = if builtins.elem name codingHosts then 3900 else 600;
     confirmTimeout = 60;
     profiles.system = {
@@ -132,7 +142,10 @@
     assert credentialDeployNames == [ "poseidon" "zeus" ];
     assert lib.all (name: inventory.${name}.kind == "nixos") credentialDeployNames;
     assert builtins.length deployNames == 4 && builtins.length (lib.unique deployNames) == 4;
-    assert lib.all (n: deployNodes.${n}.groups == [ "lab" ] && deployNodes.${n}.hostname == n) deployNames;
+    assert lib.all (n: deployNodes.${n}.groups == [ "lab" ]) deployNames;
+    assert lib.all (n: n == "eris" || deployNodes.${n}.hostname == n) deployNames;
+    assert deployNodes.eris.hostname == inventory.eris.lab.address;
+    assert deployNodes.eris.sshOpts == [ "-o" "ControlMaster=no" "-o" "ControlPath=none" "-o" "ServerAliveInterval=5" "-o" "ServerAliveCountMax=3" "-o" "ConnectTimeout=10" "-o" "ProxyJump=hades" ];
     assert lib.all (n: deployNodes.${n}.activationTimeout == 3900) codingHosts; true;
   deployConfig = { nodes = deployNodes; };
   deployInventory = builtins.concatStringsSep "" (map (name:
