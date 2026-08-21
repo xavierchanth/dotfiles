@@ -28,6 +28,7 @@ with tempfile.TemporaryDirectory() as directory:
     fake = root / "fake.py"
     fake.write_text("""import subprocess, sys, pathlib
 root, status, ignore = sys.argv[1], int(sys.argv[2]), sys.argv[3]
+hold = len(sys.argv) > 4 and sys.argv[4] == "hold"
 code = '''import os, signal, sys, time, pathlib
 root, ignore = sys.argv[1], sys.argv[2]
 if ignore == "yes": signal.signal(signal.SIGTERM, signal.SIG_IGN)
@@ -42,6 +43,8 @@ subprocess.Popen([sys.executable, '-c', code, root, ignore])
 for _ in range(200):
     if pathlib.Path(root, "pid").exists(): break
     import time; time.sleep(.005)
+if hold:
+    import time; time.sleep(30)
 sys.exit(status)
 """)
 
@@ -80,7 +83,7 @@ sys.exit(status)
     os.kill(paused.pid, signal.SIGTERM)
     paused.communicate(timeout=8)
     assert paused.returncode == 143
-    assert not alive(int((root / "pid").read_text()))
+    assert not (root / "marker").exists()
 
     unrelated = subprocess.Popen([python, "-c", "import time; time.sleep(30)"])
     try:
@@ -88,7 +91,7 @@ sys.exit(status)
             for name in ("pid", "marker"):
                 try: (root / name).unlink()
                 except FileNotFoundError: pass
-            wrapped = subprocess.Popen([supervisor, python, str(fake), str(root), "0", "no"],
+            wrapped = subprocess.Popen([supervisor, python, str(fake), str(root), "0", "yes", "hold"],
                                        stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
             deadline = time.monotonic() + 3
             while not (root / "pid").exists() and time.monotonic() < deadline:
@@ -138,13 +141,45 @@ def pty_run(command: list[str], writes: list[bytes], ctrl_c: bool = False) -> tu
         os.close(master)
 
 interactive = """import sys
-first = input()
-with open('/dev/tty', 'r') as tty: second = tty.readline().strip()
+with open('/dev/tty', 'r') as tty: first = tty.readline().strip()
+second = input()
 print('PTY-OK:' + first + ':' + second, flush=True)
 """
 status, output = pty_run([python, "-c", interactive], [b"first\n", b"second\n"])
 assert status == 0 and b"PTY-OK:first:second" in output, (status, output)
 status, _ = pty_run([python, "-c", "import time; print('READY', flush=True); time.sleep(30)"], [], ctrl_c=True)
 assert status == 130, status
+
+# Keep a harness alive in one PTY/session across supervisor return.  It verifies
+# foreground ownership restoration, then performs another immediate /dev/tty read.
+harness = """import os, subprocess, sys
+supervisor, python = sys.argv[1:]
+command = "with open('/dev/tty') as t: print('FIRST:' + t.readline().strip(), flush=True)"
+status = subprocess.run([supervisor, python, '-c', command]).returncode
+assert status == 0
+assert os.tcgetpgrp(0) == os.getpgrp(), (os.tcgetpgrp(0), os.getpgrp())
+with open('/dev/tty') as tty: print('FOLLOWUP:' + tty.readline().strip(), flush=True)
+"""
+pid, master = pty.fork()
+if pid == 0:
+    os.execv(python, [python, "-c", harness, supervisor, python])
+try:
+    os.write(master, b"one\ntwo\n")
+    output = bytearray()
+    deadline = time.monotonic() + 8
+    raw = None
+    while time.monotonic() < deadline:
+        ready, _, _ = select.select([master], [], [], .1)
+        if ready:
+            try: output.extend(os.read(master, 4096))
+            except OSError: pass
+        waited, candidate = os.waitpid(pid, os.WNOHANG)
+        if waited:
+            raw = candidate
+            break
+    assert raw is not None and os.waitstatus_to_exitcode(raw) == 0, output
+    assert b"FIRST:one" in output and b"FOLLOWUP:two" in output, output
+finally:
+    os.close(master)
 
 print("deploy supervisor tests: ok")

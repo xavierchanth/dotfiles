@@ -61,6 +61,25 @@ def set_foreground(fd: int, pgid: int) -> None:
         signal.signal(signal.SIGTTOU, previous)
 
 
+def child_gate(argv: list[str]) -> int:
+    """Wait without touching the terminal, then replace this group leader."""
+    try:
+        gate_fd = int(argv[0])
+        released = os.read(gate_fd, 1)
+        os.close(gate_fd)
+        if released != b"G":
+            print("deploy-supervisor: child gate closed before release", file=sys.stderr)
+            return ERROR_STATUS
+        os.execvp(argv[1], argv[1:])
+    except FileNotFoundError:
+        print(f"deploy-supervisor: command not found: {argv[1]}", file=sys.stderr)
+        return 127
+    except (OSError, ValueError, IndexError) as error:
+        print(f"deploy-supervisor: child gate failed: {error}", file=sys.stderr)
+        return ERROR_STATUS
+    return ERROR_STATUS
+
+
 def main(argv: list[str]) -> int:
     if not argv:
         print("usage: deploy-supervisor COMMAND [ARG ...]", file=sys.stderr)
@@ -86,13 +105,24 @@ def main(argv: list[str]) -> int:
     child = None
     pgid = None
     original_foreground = None
+    gate_read = None
+    gate_write = None
     tty_fd = sys.stdin.fileno()
     status = ERROR_STATUS
     cleanup_error = None
+    gate_failed = False
     try:
-        # A separate group preserves the controlling terminal/session.  Handlers
-        # are deliberately installed before this is allowed to create a child.
-        child = subprocess.Popen(argv, process_group=0)
+        # The new group leader initially runs only our pipe gate.  It cannot
+        # touch the controlling TTY before the parent makes its group foreground.
+        gate_read, gate_write = os.pipe()
+        os.set_inheritable(gate_read, True)
+        child = subprocess.Popen(
+            [sys.executable, os.path.abspath(__file__), "--_child-gate", str(gate_read), *argv],
+            process_group=0,
+            pass_fds=(gate_read,),
+        )
+        os.close(gate_read)
+        gate_read = None
         if os.environ.get("DEPLOY_SUPERVISOR_TEST_SPAWN_PAUSE"):
             print("deploy-supervisor: spawn-paused", file=sys.stderr, flush=True)
             time.sleep(0.5)
@@ -106,8 +136,18 @@ def main(argv: list[str]) -> int:
         if os.isatty(tty_fd):
             original_foreground = os.tcgetpgrp(tty_fd)
             set_foreground(tty_fd, pgid)
+        try:
+            os.write(gate_write, b"G")
+        except BrokenPipeError:
+            if state["received"] is None:
+                print("deploy-supervisor: child exited before gate release", file=sys.stderr)
+                gate_failed = True
+        finally:
+            os.close(gate_write)
+            gate_write = None
         child_status = child.wait()
-        status = child_status if child_status >= 0 else 128 - child_status
+        if not gate_failed or state["received"] is not None:
+            status = child_status if child_status >= 0 else 128 - child_status
     except FileNotFoundError:
         print(f"deploy-supervisor: command not found: {argv[0]}", file=sys.stderr)
         status = 127
@@ -115,6 +155,12 @@ def main(argv: list[str]) -> int:
         print(f"deploy-supervisor: supervision failed: {error}", file=sys.stderr)
         status = ERROR_STATUS
     finally:
+        for fd in (gate_read, gate_write):
+            if fd is not None:
+                try:
+                    os.close(fd)
+                except OSError:
+                    pass
         if pgid is not None:
             try:
                 cleanup_group(pgid)
@@ -137,4 +183,7 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+    arguments = sys.argv[1:]
+    if arguments[:1] == ["--_child-gate"]:
+        sys.exit(child_gate(arguments[1:]))
+    sys.exit(main(arguments))
