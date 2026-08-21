@@ -21,6 +21,7 @@
   darwin-defaults = import ./modules/darwin/defaults;
   darwin-raycast = import ./modules/darwin/raycast;
   darwin-server-power = import ./modules/darwin/server-power;
+  darwin-server-remote-access = import ./modules/darwin/server-remote-access;
   darwin-desktop-apps = import ./modules/darwin/desktop-apps;
   darwin-server-brew = import ./modules/darwin/homebrew;
 }
