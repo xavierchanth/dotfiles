@@ -3,7 +3,6 @@ paranoid = true
 disable_backends = ["asdf", "vfox"]
 minimum_release_age = "3d"
 lockfile = true
-python.compile = false
 ruby.compile = false
 
 [tools]
@@ -11,7 +10,6 @@ rust = { version = "stable", profile = "minimal", components = "cargo,clippy,rus
 node = "lts"
 bun = "latest"
 go = "latest"
-python = "3.14.6"
 ruby = "3.3.12"
 zig = "latest"
 # dart = "latest" # Optional; Flutter currently supplies Dart.
