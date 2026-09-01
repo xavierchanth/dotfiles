@@ -4,10 +4,6 @@
       "rev": "c17422457027c913c76c75a921fca1e623d2678e",
       "src": "https://github.com/ThePrimeagen/99"
     },
-    "SchemaStore.nvim": {
-      "rev": "19e40cef03a380bfb578793a08222826118664dd",
-      "src": "https://github.com/b0o/SchemaStore.nvim"
-    },
     "blink.cmp": {
       "rev": "78336bc89ee5365633bcf754d93df01678b5c08f",
       "src": "https://github.com/saghen/blink.cmp",
@@ -28,18 +24,9 @@
       "src": "https://github.com/Saecki/crates.nvim",
       "version": ">=0.0.0"
     },
-    "csharpls-extended-lsp.nvim": {
-      "rev": "9328e1a",
-      "src": "https://github.com/Decodetalkers/csharpls-extended-lsp.nvim",
-      "version": ">=0.0.0"
-    },
     "friendly-snippets": {
       "rev": "6cd7280adead7f586db6fccbd15d2cac7e2188b9",
       "src": "https://github.com/rafamadriz/friendly-snippets"
-    },
-    "goplements.nvim": {
-      "rev": "1750ace",
-      "src": "https://github.com/maxandron/goplements.nvim"
     },
     "grug-far.nvim": {
       "rev": "6e05398cf6cad05b3fb46569db96b1ccfcbbd402",
@@ -50,11 +37,6 @@
       "rev": "87b1a35",
       "src": "https://github.com/ThePrimeagen/harpoon",
       "version": "'harpoon2'"
-    },
-    "lazydev.nvim": {
-      "rev": "01bc2aacd51cf9021eb19d048e70ce3dd09f7f93",
-      "src": "https://github.com/folke/lazydev.nvim",
-      "version": ">=0.0.0"
     },
     "mini.ai": {
       "rev": "d73c36349aa7b0bab5f77ad71701a1d42211a1df",
@@ -89,10 +71,6 @@
       "rev": "17c0a8faaf48298a0c0cfb0d757c0eaee4ff7a32",
       "src": "https://github.com/stevearc/oil.nvim",
       "version": ">=0.0.0"
-    },
-    "omnisharp-extended-lsp.nvim": {
-      "rev": "51e407a46ddb15e49727139b5b1ae3650cd6a069",
-      "src": "https://github.com/Hoffs/omnisharp-extended-lsp.nvim"
     },
     "pi.nvim": {
       "rev": "77c79e656bdec2b2ef7a1b7f69b74f6f8faf719b",

@@ -80,9 +80,6 @@ end)
 vim.keymap.set("n", "<leader>sc", function()
   require("snacks.picker").resume()
 end)
-vim.keymap.set("n", "<leader>ss", function()
-  require("snacks.picker").lsp_symbols()
-end)
 vim.keymap.set("n", "<leader>z", function()
   require("snacks").zen.zen({
     wo = { winhighlight = "NormalFloat:Normal" },

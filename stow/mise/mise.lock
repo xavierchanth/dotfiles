@@ -59,65 +59,6 @@ checksum = "sha256:e77d0ea1226b8b389b43f702240091249a96eea25857281f90ea24d0eb9eb
 url = "https://github.com/JohnnyMorganz/StyLua/releases/download/v2.5.2/stylua-windows-x86_64.zip"
 url_api = "https://api.github.com/repos/JohnnyMorganz/StyLua/releases/assets/421902292"
 
-[[tools."aqua:LuaLS/lua-language-server"]]
-version = "3.19.0"
-backend = "aqua:LuaLS/lua-language-server"
-
-[tools."aqua:LuaLS/lua-language-server"."platforms.linux-arm64"]
-checksum = "sha256:f625d3955c8cb2962b65f26970fa7caa502ed6ed448686aa0ffaa23a59ebd454"
-url = "https://github.com/LuaLS/lua-language-server/releases/download/3.19.0/lua-language-server-3.19.0-linux-arm64.tar.gz"
-url_api = "https://api.github.com/repos/LuaLS/lua-language-server/releases/assets/505549603"
-
-[tools."aqua:LuaLS/lua-language-server"."platforms.linux-arm64-musl"]
-checksum = "sha256:f625d3955c8cb2962b65f26970fa7caa502ed6ed448686aa0ffaa23a59ebd454"
-url = "https://github.com/LuaLS/lua-language-server/releases/download/3.19.0/lua-language-server-3.19.0-linux-arm64.tar.gz"
-url_api = "https://api.github.com/repos/LuaLS/lua-language-server/releases/assets/505549603"
-
-[tools."aqua:LuaLS/lua-language-server"."platforms.linux-x64"]
-checksum = "sha256:624ae8dd3bfbd5c2ee3ccf2f3547d33aeefa209971cce8c11d48f69fc1ec065a"
-url = "https://github.com/LuaLS/lua-language-server/releases/download/3.19.0/lua-language-server-3.19.0-linux-x64.tar.gz"
-url_api = "https://api.github.com/repos/LuaLS/lua-language-server/releases/assets/505550982"
-
-[tools."aqua:LuaLS/lua-language-server"."platforms.linux-x64-baseline"]
-checksum = "sha256:624ae8dd3bfbd5c2ee3ccf2f3547d33aeefa209971cce8c11d48f69fc1ec065a"
-url = "https://github.com/LuaLS/lua-language-server/releases/download/3.19.0/lua-language-server-3.19.0-linux-x64.tar.gz"
-url_api = "https://api.github.com/repos/LuaLS/lua-language-server/releases/assets/505550982"
-
-[tools."aqua:LuaLS/lua-language-server"."platforms.linux-x64-musl"]
-checksum = "sha256:624ae8dd3bfbd5c2ee3ccf2f3547d33aeefa209971cce8c11d48f69fc1ec065a"
-url = "https://github.com/LuaLS/lua-language-server/releases/download/3.19.0/lua-language-server-3.19.0-linux-x64.tar.gz"
-url_api = "https://api.github.com/repos/LuaLS/lua-language-server/releases/assets/505550982"
-
-[tools."aqua:LuaLS/lua-language-server"."platforms.linux-x64-musl-baseline"]
-checksum = "sha256:624ae8dd3bfbd5c2ee3ccf2f3547d33aeefa209971cce8c11d48f69fc1ec065a"
-url = "https://github.com/LuaLS/lua-language-server/releases/download/3.19.0/lua-language-server-3.19.0-linux-x64.tar.gz"
-url_api = "https://api.github.com/repos/LuaLS/lua-language-server/releases/assets/505550982"
-
-[tools."aqua:LuaLS/lua-language-server"."platforms.macos-arm64"]
-checksum = "sha256:c952adb8521d316ecbfe3b6add88e7cc03a4b5d74143911cbb61b30bbeafd7bb"
-url = "https://github.com/LuaLS/lua-language-server/releases/download/3.19.0/lua-language-server-3.19.0-darwin-arm64.tar.gz"
-url_api = "https://api.github.com/repos/LuaLS/lua-language-server/releases/assets/505549330"
-
-[tools."aqua:LuaLS/lua-language-server"."platforms.macos-x64"]
-checksum = "sha256:0b7b75409994f8071304311fecf596b4529722bcc5e5287204e272f80d8e0101"
-url = "https://github.com/LuaLS/lua-language-server/releases/download/3.19.0/lua-language-server-3.19.0-darwin-x64.tar.gz"
-url_api = "https://api.github.com/repos/LuaLS/lua-language-server/releases/assets/505548839"
-
-[tools."aqua:LuaLS/lua-language-server"."platforms.macos-x64-baseline"]
-checksum = "sha256:0b7b75409994f8071304311fecf596b4529722bcc5e5287204e272f80d8e0101"
-url = "https://github.com/LuaLS/lua-language-server/releases/download/3.19.0/lua-language-server-3.19.0-darwin-x64.tar.gz"
-url_api = "https://api.github.com/repos/LuaLS/lua-language-server/releases/assets/505548839"
-
-[tools."aqua:LuaLS/lua-language-server"."platforms.windows-x64"]
-checksum = "sha256:cc100f23cc33d5ef90c6be9853934edaaf82f0f9c6a64b2a03fb8936d8cfc567"
-url = "https://github.com/LuaLS/lua-language-server/releases/download/3.19.0/lua-language-server-3.19.0-win32-x64.zip"
-url_api = "https://api.github.com/repos/LuaLS/lua-language-server/releases/assets/505550527"
-
-[tools."aqua:LuaLS/lua-language-server"."platforms.windows-x64-baseline"]
-checksum = "sha256:cc100f23cc33d5ef90c6be9853934edaaf82f0f9c6a64b2a03fb8936d8cfc567"
-url = "https://github.com/LuaLS/lua-language-server/releases/download/3.19.0/lua-language-server-3.19.0-win32-x64.zip"
-url_api = "https://api.github.com/repos/LuaLS/lua-language-server/releases/assets/505550527"
-
 [[tools."aqua:Myriad-Dreamin/tinymist"]]
 version = "0.15.2"
 backend = "aqua:Myriad-Dreamin/tinymist"
@@ -949,54 +890,6 @@ checksum = "sha256:19ce3551153c2fe7ee9fa2f95208310c8f4d3209fedb699e0333faf8913f6
 url = "https://github.com/typst/typst/releases/download/v0.15.1/typst-x86_64-pc-windows-msvc.zip"
 url_api = "https://api.github.com/repos/typst/typst/releases/assets/480303335"
 
-[[tools."aqua:zigtools/zls"]]
-version = "0.16.0"
-backend = "aqua:zigtools/zls"
-
-[tools."aqua:zigtools/zls"."platforms.linux-arm64"]
-url = "https://builds.zigtools.org/zls-aarch64-linux-0.16.0.tar.xz"
-provenance = "minisign"
-
-[tools."aqua:zigtools/zls"."platforms.linux-arm64-musl"]
-url = "https://builds.zigtools.org/zls-aarch64-linux-0.16.0.tar.xz"
-provenance = "minisign"
-
-[tools."aqua:zigtools/zls"."platforms.linux-x64"]
-url = "https://builds.zigtools.org/zls-x86_64-linux-0.16.0.tar.xz"
-provenance = "minisign"
-
-[tools."aqua:zigtools/zls"."platforms.linux-x64-baseline"]
-url = "https://builds.zigtools.org/zls-x86_64-linux-0.16.0.tar.xz"
-provenance = "minisign"
-
-[tools."aqua:zigtools/zls"."platforms.linux-x64-musl"]
-url = "https://builds.zigtools.org/zls-x86_64-linux-0.16.0.tar.xz"
-provenance = "minisign"
-
-[tools."aqua:zigtools/zls"."platforms.linux-x64-musl-baseline"]
-url = "https://builds.zigtools.org/zls-x86_64-linux-0.16.0.tar.xz"
-provenance = "minisign"
-
-[tools."aqua:zigtools/zls"."platforms.macos-arm64"]
-url = "https://builds.zigtools.org/zls-aarch64-macos-0.16.0.tar.xz"
-provenance = "minisign"
-
-[tools."aqua:zigtools/zls"."platforms.macos-x64"]
-url = "https://builds.zigtools.org/zls-x86_64-macos-0.16.0.tar.xz"
-provenance = "minisign"
-
-[tools."aqua:zigtools/zls"."platforms.macos-x64-baseline"]
-url = "https://builds.zigtools.org/zls-x86_64-macos-0.16.0.tar.xz"
-provenance = "minisign"
-
-[tools."aqua:zigtools/zls"."platforms.windows-x64"]
-url = "https://builds.zigtools.org/zls-x86_64-windows-0.16.0.zip"
-provenance = "minisign"
-
-[tools."aqua:zigtools/zls"."platforms.windows-x64-baseline"]
-url = "https://builds.zigtools.org/zls-x86_64-windows-0.16.0.zip"
-provenance = "minisign"
-
 [[tools.bun]]
 version = "1.3.14"
 backend = "core:bun"
@@ -1109,10 +1002,6 @@ url = "https://dl.google.com/go/go1.26.5.windows-amd64.zip"
 checksum = "sha256:97e6b2a833b6d89f9ff17d25419ac0a7e3b482a044e9ab18cdef834bd834fd38"
 url = "https://dl.google.com/go/go1.26.5.windows-amd64.zip"
 
-[[tools."go:golang.org/x/tools/gopls"]]
-version = "0.23.0"
-backend = "go:golang.org/x/tools/gopls"
-
 [[tools.node]]
 version = "24.19.0"
 backend = "core:node"
@@ -1161,25 +1050,9 @@ url = "https://nodejs.org/dist/v24.19.0/node-v24.19.0-win-x64.zip"
 checksum = "sha256:57f71ab3652e797d84acddc79c81cc9ff1c6ddb2a1974cdb83f00fee9bff4c73"
 url = "https://nodejs.org/dist/v24.19.0/node-v24.19.0-win-x64.zip"
 
-[[tools."npm:@microsoft/compose-language-service"]]
-version = "1.0.0"
-backend = "npm:@microsoft/compose-language-service"
-
 [[tools."npm:@openai/codex"]]
 version = "0.147.0"
 backend = "npm:@openai/codex"
-
-[[tools."npm:@tailwindcss/language-server"]]
-version = "0.16.0"
-backend = "npm:@tailwindcss/language-server"
-
-[[tools."npm:@vtsls/language-server"]]
-version = "0.3.0"
-backend = "npm:@vtsls/language-server"
-
-[[tools."npm:basedpyright"]]
-version = "1.39.9"
-backend = "npm:basedpyright"
 
 [[tools."npm:codeburn"]]
 version = "0.9.19"
@@ -1189,10 +1062,6 @@ backend = "npm:codeburn"
 version = "1.43.0"
 backend = "npm:convex"
 
-[[tools."npm:dockerfile-language-server-nodejs"]]
-version = "0.15.0"
-backend = "npm:dockerfile-language-server-nodejs"
-
 [[tools."npm:playwright"]]
 version = "1.62.1"
 backend = "npm:playwright"
@@ -1200,14 +1069,6 @@ backend = "npm:playwright"
 [[tools."npm:prettier"]]
 version = "3.9.6"
 backend = "npm:prettier"
-
-[[tools."npm:vscode-langservers-extracted"]]
-version = "4.10.0"
-backend = "npm:vscode-langservers-extracted"
-
-[[tools."npm:yaml-language-server"]]
-version = "1.24.0"
-backend = "npm:yaml-language-server"
 
 [[tools.ruby]]
 version = "3.3.12"
@@ -1287,7 +1148,7 @@ version = "stable"
 backend = "core:rust"
 
 [tools.rust.options]
-components = "cargo,clippy,rust-analyzer,rustc,rustfmt"
+components = "cargo,clippy,rustc,rustfmt"
 profile = "minimal"
 targets = "wasm32-unknown-unknown"
 

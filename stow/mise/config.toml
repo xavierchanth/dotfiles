@@ -6,7 +6,7 @@ lockfile = true
 ruby.compile = false
 
 [tools]
-rust = { version = "stable", profile = "minimal", components = "cargo,clippy,rustc,rustfmt,rust-analyzer", targets = "wasm32-unknown-unknown" }
+rust = { version = "stable", profile = "minimal", components = "cargo,clippy,rustc,rustfmt", targets = "wasm32-unknown-unknown" }
 node = "lts"
 bun = "latest"
 go = "latest"
@@ -27,15 +27,7 @@ zig = "latest"
 "npm:convex" = "latest"
 "npm:playwright" = "latest"
 
-"npm:basedpyright" = "latest"
 "npm:prettier" = "latest"
-"npm:dockerfile-language-server-nodejs" = "latest"
-"npm:@microsoft/compose-language-service" = "latest"
-"npm:@tailwindcss/language-server" = "latest"
-"npm:vscode-langservers-extracted" = "latest"
-"npm:@vtsls/language-server" = "latest"
-"npm:yaml-language-server" = "latest"
-"go:golang.org/x/tools/gopls" = "latest"
 "aqua:astral-sh/uv" = "latest"
 "aqua:astral-sh/ruff" = "latest"
 "aqua:pnpm/pnpm" = "latest"
@@ -43,8 +35,6 @@ zig = "latest"
 "aqua:mvdan/sh" = "latest"
 "aqua:koalaman/shellcheck" = "latest"
 "aqua:JohnnyMorganz/StyLua" = "latest"
-"aqua:LuaLS/lua-language-server" = "latest"
-"aqua:zigtools/zls" = "latest"
 "aqua:cue-lang/cue" = "latest"
 "aqua:typst/typst" = "latest"
 "aqua:Myriad-Dreamin/tinymist" = "latest"

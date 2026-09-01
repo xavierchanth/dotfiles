@@ -52,7 +52,6 @@ vim.api.nvim_create_autocmd("UIEnter", {
 
 vim.api.nvim_create_autocmd("VimEnter", {
   callback = function()
-    require("lsp")
     pack.load(spec.lazy)
   end,
 })

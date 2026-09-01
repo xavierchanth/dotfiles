@@ -91,7 +91,6 @@
       # Programming Languages
       cmake
       mise
-      neocmakelsp
       ninja
       postgresql_16
     ])
