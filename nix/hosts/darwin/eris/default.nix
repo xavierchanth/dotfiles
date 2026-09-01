@@ -1,1 +1,1 @@
-{ groups = []; modules = []; }
+{ groups = [ "mise-workstation" ]; modules = []; }

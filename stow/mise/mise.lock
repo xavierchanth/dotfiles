@@ -1070,6 +1070,10 @@ backend = "npm:playwright"
 version = "3.9.6"
 backend = "npm:prettier"
 
+[[tools."npm:t3"]]
+version = "0.0.36"
+backend = "npm:t3"
+
 [[tools.ruby]]
 version = "3.3.12"
 backend = "core:ruby"

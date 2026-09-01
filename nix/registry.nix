@@ -23,5 +23,6 @@
   darwin-server-power = import ./modules/darwin/server-power;
   darwin-server-remote-access = import ./modules/darwin/server-remote-access;
   darwin-desktop-apps = import ./modules/darwin/desktop-apps;
+  t3-desktop = import ./modules/darwin/t3-desktop;
   darwin-server-brew = import ./modules/darwin/homebrew;
 }

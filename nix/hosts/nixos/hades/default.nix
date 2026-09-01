@@ -1,1 +1,1 @@
-{ groups = []; modules = [ ./platform.nix ]; }
+{ groups = [ "mise-workstation" ]; modules = [ ./platform.nix ]; }

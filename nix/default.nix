@@ -83,7 +83,7 @@
   deployNames = lab.deploymentOrder;
   deployCredentialsFor = name: (contextFor name).resolvedGroups.deployCredentials;
   credentialDeployNames = lib.filter (name: deployCredentialsFor name != []) deployNames;
-  codingHosts = credentialDeployNames;
+  credentialNixosHosts = lib.filter (name: inventory.${name}.kind == "nixos") credentialDeployNames;
   codingValidation = let
     home = name: (mkHome name).config;
     packageNames = name: map lib.getName (home name).home.packages;
@@ -93,14 +93,15 @@
     activation = name: (home name).home.activation;
     miseText = name: (activation name).installMiseTools.data;
     stowText = name: (activation name).stowDotfiles.data;
-  in assert lib.all (name: has "mise" name && hasCompiler name && hasPkgConfig name) codingHosts;
+  in assert lib.all (name: has "mise" name && hasCompiler name && hasPkgConfig name) credentialNixosHosts;
      assert has "mise" "nyx" && !(hasCompiler "nyx");
-     assert !(has "mise" "hades") && !(hasCompiler "hades") && !(activation "hades" ? installMiseTools);
-     assert lib.all (name: (activation name).installMiseTools.after == [ "stowDotfiles" ]) codingHosts;
-     assert lib.all (name: (mkNixos name).config.programs.nix-ld.enable && (mkNixos name).config.systemd.services."home-manager-${username}".serviceConfig.TimeoutStartSec == "1h") codingHosts;
-     assert lib.all (name: lib.hasInfix "SSL_CERT_FILE=" (miseText name) && lib.hasInfix "MISE_GITHUB_TOKEN=" (miseText name) && lib.hasInfix ''"$PATH"'' (miseText name) && lib.hasInfix "timeout 5s" (miseText name)) codingHosts;
-     assert lib.all (name: !(lib.hasInfix ''cleanup_stow_links mise '' (stowText name))) codingHosts;
-     assert lib.hasInfix ''cleanup_stow_links mise '' (stowText "hades"); true;
+     assert has "mise" "eris" && !(hasCompiler "eris");
+     assert has "mise" "hades" && hasCompiler "hades" && activation "hades" ? installMiseTools;
+     assert lib.all (name: (activation name).installMiseTools.after == [ "stowDotfiles" ]) credentialDeployNames;
+     assert lib.all (name: (mkNixos name).config.programs.nix-ld.enable && (mkNixos name).config.systemd.services."home-manager-${username}".serviceConfig.TimeoutStartSec == "1h") credentialNixosHosts;
+     assert lib.all (name: lib.hasInfix "SSL_CERT_FILE=" (miseText name) && lib.hasInfix "MISE_GITHUB_TOKEN=" (miseText name) && lib.hasInfix ''"$PATH"'' (miseText name) && lib.hasInfix "timeout 5s" (miseText name)) credentialDeployNames;
+     assert lib.all (name: !(lib.hasInfix ''cleanup_stow_links mise '' (stowText name))) credentialDeployNames;
+     assert !(lib.hasInfix ''cleanup_stow_links mise '' (stowText "hades")); true;
   inventoryValidation = let
     charon = inventory.charon;
     deployed = lab.deploymentOrder;
@@ -129,7 +130,7 @@
     autoRollback = true;
     magicRollback = host.kind == "nixos"; # deploy-rs' inotify rollback is not portable to Darwin.
     sshOpts = [ "-o" "ControlMaster=no" "-o" "ControlPath=none" "-o" "ServerAliveInterval=5" "-o" "ServerAliveCountMax=3" "-o" "ConnectTimeout=10" ] ++ lib.optionals (route ? proxyJump) [ "-o" "ProxyJump=${route.proxyJump}" ];
-    activationTimeout = if builtins.elem name codingHosts then 3900 else 600;
+    activationTimeout = if builtins.elem name credentialDeployNames then 3900 else 600;
     confirmTimeout = 60;
     profiles.system = {
       user = "root";
@@ -139,14 +140,13 @@
     };
   });
   deployValidation = assert builtins.attrNames deployNodes == lib.sort builtins.lessThan [ "eris" "hades" "poseidon" "zeus" ];
-    assert credentialDeployNames == [ "poseidon" "zeus" ];
-    assert lib.all (name: inventory.${name}.kind == "nixos") credentialDeployNames;
+    assert credentialDeployNames == deployNames;
     assert builtins.length deployNames == 4 && builtins.length (lib.unique deployNames) == 4;
     assert lib.all (n: deployNodes.${n}.groups == [ "lab" ]) deployNames;
     assert lib.all (n: n == "eris" || deployNodes.${n}.hostname == n) deployNames;
     assert deployNodes.eris.hostname == inventory.eris.lab.address;
     assert deployNodes.eris.sshOpts == [ "-o" "ControlMaster=no" "-o" "ControlPath=none" "-o" "ServerAliveInterval=5" "-o" "ServerAliveCountMax=3" "-o" "ConnectTimeout=10" "-o" "ProxyJump=hades" ];
-    assert lib.all (n: deployNodes.${n}.activationTimeout == 3900) codingHosts; true;
+    assert lib.all (n: deployNodes.${n}.activationTimeout == 3900) credentialDeployNames; true;
   deployConfig = { nodes = deployNodes; };
   deployInventory = builtins.concatStringsSep "" (map (name:
     "${name}\t${inventory.${name}.kind}\t${inventory.${name}.system}\t${if deployCredentialsFor name == [] then "-" else lib.concatStringsSep "," (deployCredentialsFor name)}\n") deployNames);

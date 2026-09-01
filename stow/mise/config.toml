@@ -26,6 +26,7 @@ zig = "latest"
 "npm:codeburn" = "latest"
 "npm:convex" = "latest"
 "npm:playwright" = "latest"
+"npm:t3" = "latest"
 
 "npm:prettier" = "latest"
 "aqua:astral-sh/uv" = "latest"
