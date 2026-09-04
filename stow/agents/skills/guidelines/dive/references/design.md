@@ -1,8 +1,3 @@
----
-name: plan
-description: Use when the user asks to design or plan software work.
----
-
 Design and plan so the user can challenge and refine the direction before implementation.
 
 Ground the work in the governing code, tests, configuration, documentation, and current state. Present observations, inferences, and proposed decisions distinctly.
@@ -15,7 +10,7 @@ Resolve the choices that shape implementation:
 - Constraints and invariants
 - Acceptance boundary
 
-Use repository evidence to answer questions first. Ask the user about material choices whose answers could change the result. Design is ready when implementation intent is explicit.
+Use repository evidence to answer questions first. Return material choices whose answers could change the result to the orchestrator for user alignment. Carry the user’s answers and the reasons behind decisions into the plan. Design is ready when implementation intent is explicit.
 
 Turn the resulting design into an execution plan:
 
@@ -24,6 +19,6 @@ Turn the resulting design into an execution plan:
 - Order dependent work and identify independent work.
 - State each outcome’s affected surface, constraints, dependencies, and verification.
 
-Present the design and plan inline unless the user specifies another destination. Wait for the user to align on the proposal before implementation.
+Return the design and plan to the orchestrator for inline presentation unless the user specifies another destination.
 
 Revisit the design when planning or later evidence changes its assumptions.
