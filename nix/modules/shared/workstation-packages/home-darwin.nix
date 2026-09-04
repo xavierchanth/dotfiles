@@ -1,7 +1,6 @@
 {config, lib, pkgs, ...}: {
   imports = [
     ../../home/darwin-applications.nix
-    ../claude.nix
     ../packages.nix
   ];
 
