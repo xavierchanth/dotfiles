@@ -12,6 +12,7 @@
 
   home.file.".cargo/config.toml".text = ''
     [build]
+    jobs = 4
     rustc-wrapper = "sccache"
     incremental = false
   '';
