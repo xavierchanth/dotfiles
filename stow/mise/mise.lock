@@ -1074,6 +1074,21 @@ backend = "npm:prettier"
 version = "0.0.36"
 backend = "npm:t3"
 
+[tools."npm:t3".options]
+trust_policy_excludes = '["@pierre/theme@1.1.0"]'
+
+[[tools.ruby]]
+version = "3.3.12"
+backend = "core:ruby"
+
+[tools.ruby."platforms.windows-x64"]
+checksum = "sha256:f8d534a44e47e5b72abe557497763128b93e9356bd91397a3d7b9e0a11572943"
+url = "https://github.com/oneclick/rubyinstaller2/releases/download/RubyInstaller-3.3.12-1/rubyinstaller-3.3.12-1-x64.7z"
+
+[tools.ruby."platforms.windows-x64-baseline"]
+checksum = "sha256:f8d534a44e47e5b72abe557497763128b93e9356bd91397a3d7b9e0a11572943"
+url = "https://github.com/oneclick/rubyinstaller2/releases/download/RubyInstaller-3.3.12-1/rubyinstaller-3.3.12-1-x64.7z"
+
 [[tools.ruby]]
 version = "3.3.12"
 backend = "core:ruby"
@@ -1126,18 +1141,6 @@ url = "https://cache.ruby-lang.org/pub/ruby/3.3/ruby-3.3.12.tar.gz"
 [tools.ruby."platforms.macos-x64-baseline"]
 checksum = "sha256:b06d63beae271933033e27f0a389bc582a009e7845357d44365c39de525a051b"
 url = "https://cache.ruby-lang.org/pub/ruby/3.3/ruby-3.3.12.tar.gz"
-
-[tools.ruby."platforms.windows-x64"]
-checksum = "sha256:f8d534a44e47e5b72abe557497763128b93e9356bd91397a3d7b9e0a11572943"
-url = "https://github.com/oneclick/rubyinstaller2/releases/download/RubyInstaller-3.3.12-1/rubyinstaller-3.3.12-1-x64.7z"
-
-[tools.ruby."platforms.windows-x64-baseline"]
-checksum = "sha256:f8d534a44e47e5b72abe557497763128b93e9356bd91397a3d7b9e0a11572943"
-url = "https://github.com/oneclick/rubyinstaller2/releases/download/RubyInstaller-3.3.12-1/rubyinstaller-3.3.12-1-x64.7z"
-
-[[tools.ruby]]
-version = "3.3.12"
-backend = "core:ruby"
 
 [tools.ruby."platforms.windows-x64"]
 checksum = "sha256:f8d534a44e47e5b72abe557497763128b93e9356bd91397a3d7b9e0a11572943"

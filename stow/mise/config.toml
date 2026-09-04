@@ -21,7 +21,6 @@ zig = "latest"
 "cargo:wasm-bindgen-cli" = "latest"
 
 # Global command-line tools remain independent of the selected Bun runtime.
-"aqua:earendil-works/pi" = "latest"
 "npm:@openai/codex" = "latest"
 "npm:codeburn" = "latest"
 "npm:convex" = "latest"
