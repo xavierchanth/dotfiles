@@ -11,8 +11,12 @@ update *args:
   ./scripts/update.sh {{args}}
 
 check:
+  bash scripts/handoff-reference.sh --check
   nix flake check --all-systems --no-build --no-write-lock-file
   nix flake check --no-write-lock-file
+
+handoff-reference:
+  bash scripts/handoff-reference.sh
 
 deploy *args:
   nix run .#deploy -- {{args}}

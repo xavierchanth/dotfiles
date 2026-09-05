@@ -25,7 +25,6 @@ zig = "latest"
 "npm:codeburn" = "latest"
 "npm:convex" = "latest"
 "npm:playwright" = "latest"
-"npm:t3" = { version = "latest", trust_policy_excludes = ["@pierre/theme@1.1.0"] }
 
 "npm:prettier" = "latest"
 "aqua:astral-sh/uv" = "latest"

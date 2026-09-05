@@ -165,48 +165,6 @@ window.CLARITY_THEME_DATA = {
       "label": "Neovim ANSI light",
       "schemaVersion": 1,
       "sourceTheme": "clarity-cterm"
-    },
-    {
-      "appearance": "dark",
-      "application": "pi",
-      "label": "Pi ANSI dark",
-      "roles": {
-        "accent": 12,
-        "blue": 12,
-        "border": 14,
-        "cyan": 14,
-        "green": 10,
-        "magenta": 13,
-        "muted": 5,
-        "neutral": 7,
-        "panelBackground": 0,
-        "panelText": 15,
-        "red": 9,
-        "yellow": 11
-      },
-      "schemaVersion": 1,
-      "sourceTheme": "ansi-dark"
-    },
-    {
-      "appearance": "light",
-      "application": "pi",
-      "label": "Pi ANSI light",
-      "roles": {
-        "accent": 4,
-        "blue": 4,
-        "border": 6,
-        "cyan": 6,
-        "green": 2,
-        "magenta": 5,
-        "muted": 5,
-        "neutral": 8,
-        "panelBackground": 15,
-        "panelText": 0,
-        "red": 1,
-        "yellow": 3
-      },
-      "schemaVersion": 1,
-      "sourceTheme": "ansi-light"
     }
   ],
   "schemaVersion": 1,

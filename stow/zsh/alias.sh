@@ -12,7 +12,7 @@ alias s='source $HOME/.zshenv && source $HOME/.zshrc'
 alias q='exit'
 
 alias v='nvim'
-alias c='pi'
+alias c='codex'
 alias m='aerc'
 
 alias clera='clear' # Mistakes happen ok... I make this one alot

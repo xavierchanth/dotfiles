@@ -92,10 +92,6 @@
       "rev": "51e407a46ddb15e49727139b5b1ae3650cd6a069",
       "src": "https://github.com/Hoffs/omnisharp-extended-lsp.nvim"
     },
-    "pi.nvim": {
-      "rev": "77c79e656bdec2b2ef7a1b7f69b74f6f8faf719b",
-      "src": "https://github.com/xavierchanth/pi.nvim"
-    },
     "plenary.nvim": {
       "rev": "74b06c6c75e4eeb3108ec01852001636d85a932b",
       "src": "https://github.com/nvim-lua/plenary.nvim"

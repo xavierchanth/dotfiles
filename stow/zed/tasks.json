@@ -8,15 +8,6 @@
     "hide": "on_success",
   },
   {
-    "label": "pi",
-    "command": "pi",
-    "hide": "on_success",
-    "reveal_target": "center",
-    "use_new_terminal": true,
-    "allow_concurrent_runs": true,
-    "env": {},
-  },
-  {
     "label": "Codex",
     "command": "codex",
     "hide": "on_success",

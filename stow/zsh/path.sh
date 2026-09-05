@@ -5,7 +5,7 @@
 typeset -a _path_inherited _path_local _path_wrappers _path_nix _path_brew _path_darwin_d
 typeset -a _path_darwin _path_misc _path_base
 _path_inherited=( $path )
-_path_misc=( ${CMUX_BUNDLED_CLI_PATH:+${CMUX_BUNDLED_CLI_PATH:h}} )
+_path_misc=()
 _path_local=(
   ${DOTFILES_HOST_BIN:+"$DOTFILES_HOST_BIN"}
   "$HOME/.dotfiles/bin/shared"

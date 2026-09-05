@@ -7,6 +7,9 @@
   };
   inherit (commands) mkdirCommands stowCommands;
 in {
+  home.extraDependencies = lib.optional (selected "agents")
+    (import ../../handoff-reference-package.nix { inherit pkgs; });
+
   home.activation.stowDotfiles = lib.hm.dag.entryAfter ["writeBoundary"] ''
     STOW_DIR="${home}/.dotfiles/stow"
     ${mkdirCommands}
@@ -35,7 +38,7 @@ in {
       ${pkgs.stow}/bin/stow --dir="$STOW_DIR" --target="$ghostty_theme_dir" --restow ghostty-themes
     ''}
 
-    ${lib.optionalString (lib.any (name: !(selected name)) [ "cmux" "mise" "zed" "ghostty-themes" ]) ''
+    ${lib.optionalString (lib.any (name: !(selected name)) [ "cmux" "grok" "mise" "zed" "ghostty-themes" ]) ''
       cleanup_stow_links() {
         package_name="$1"
         target_dir="$2"
@@ -44,12 +47,13 @@ in {
         find "$target_dir" -type l | while read -r link; do
           target="$(readlink "$link" || true)"
           case "$target" in
-            "$STOW_DIR/$package_name"/*) rm -f "$link" ;;
+            "$STOW_DIR/$package_name"/*|*/stow/"$package_name"/*) rm -f "$link" ;;
           esac
         done
       }
 
       ${lib.optionalString (!(selected "cmux")) ''cleanup_stow_links cmux "${home}/.config/cmux"''}
+      cleanup_stow_links grok "${home}/.grok"
       ${lib.optionalString (!(selected "mise")) ''cleanup_stow_links mise "${home}/.config/mise"''}
       ${lib.optionalString (!(selected "zed")) ''cleanup_stow_links zed "${home}/.config/zed"''}
       ${lib.optionalString (!(selected "ghostty-themes")) ''cleanup_stow_links ghostty-themes "${home}/.config/ghostty/themes"''}

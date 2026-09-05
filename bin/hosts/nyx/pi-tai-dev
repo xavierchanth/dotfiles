@@ -1,2 +1,0 @@
-#!/bin/sh
-exec pi -ne -e /Users/chant/src/xc/pi-tai "$@"

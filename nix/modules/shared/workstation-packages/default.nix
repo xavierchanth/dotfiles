@@ -1,1 +1,1 @@
-{ name="workstation-packages"; platforms=["darwin" "nixos"]; requires=["mise-workstation"]; darwinHome=[./home-darwin.nix]; nixosHome=[./home-nixos.nix]; stow=[{name="cmux";order=90;target=".config/cmux";prepare=[".config/cmux"];}{name="zed";order=110;target=".config/zed";prepare=[".config/zed"]; }]; }
+{ name="workstation-packages"; platforms=["darwin" "nixos"]; requires=["mise-workstation"]; darwinHome=[./home-darwin.nix]; nixosHome=[./home-nixos.nix]; stow=[{name="zed";order=110;target=".config/zed";prepare=[".config/zed"]; }]; }
