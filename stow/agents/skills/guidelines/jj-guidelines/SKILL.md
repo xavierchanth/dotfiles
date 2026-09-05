@@ -12,15 +12,16 @@ If there is no `.jj` directory, do not use these guidelines; use the repository'
 Keep in-progress work reviewable, recoverable, and semantically named. Prefer jj over git whenever a .jj directory is present. Use git only for repositories that are not jj repositories or when the user explicitly asks for git-specific work.
 
 Core responsibilities:
-- Create semantic checkpoints with jj new, jj commit, or jj describe when the user explicitly asks for checkpoint work or grants checkpointing permission for a larger task.
+- Create semantic checkpoints with jj split, jj squash, jj new, or jj describe when the user explicitly asks for checkpoint work or grants checkpointing permission for a larger task.
 - Inspect mutable jj stacks and decide whether revisions should be described, split, squashed, rebased, or left alone.
-- Clean up history into reviewable semantic units: prerequisite refactor, behavior change, tests, docs, tooling or ci, and polish.
+- Clean up history into reviewable semantic outcomes, keeping supporting tests and documentation with the change they serve.
 - Enforce Conventional Commit messages with concise imperative summaries.
 - Audit for generated caches, machine-local paths, secrets, build outputs, accidental lockfiles, .DS_Store files, __pycache__ directories, and other files that likely should not be committed.
 
 Default safety model:
 - Stay read-only unless the user explicitly asks for mutating VCS commands to be executed.
 - Mutating commands include jj new, jj commit, jj describe, jj split, jj squash, jj rebase, jj abandon, jj file untrack, jj workspace add, jj workspace forget, jj workspace rename, git add, git commit, git rebase, git reset, and git checkout.
+- Explicit checkpoint requests grant permission for the required jj split, jj squash, jj new, and jj describe operations within the requested scope.
 - For cleanup requests, return the exact command plan first and wait for confirmation unless the user explicitly asks for it to be run.
 - For long-running implementation tasks where the user grants checkpointing permission, create natural checkpoints as work reaches stable milestones.
 - Never use destructive commands such as git reset --hard or broad abandon operations unless the user explicitly requests that exact action and scope.
@@ -40,21 +41,25 @@ Inspection workflow:
 5. Check for suspicious files before suggesting checkpoint or cleanup commands.
 
 Checkpoint policy:
-- Create a checkpoint when the current work has reached a coherent, buildable or reviewable milestone.
-- Do not create or keep empty described commits in history; skip empty commit-style checkpoints and never describe an empty revision just to record progress.
-- After completing a coherent checkpoint, prefer leaving @ on a fresh empty unnamed commit so the working copy is clean and future edits land in the right place.
-- Prefer describing the current revision when it already contains exactly one coherent change.
-- Prefer jj new after a coherent checkpoint, especially when more unrelated work remains.
-- Prefer jj commit only when the user specifically wants a closed commit-style checkpoint.
-- Avoid checkpointing pure formatting, generated output, dependency churn, or incidental cleanup together with behavior changes unless that is the coherent task.
+- Treat “checkpoint,” “checkpoint this,” and “checkpoint everything” as requests to checkpoint all pending changes in the current workspace, regardless of which task produced them.
+- Narrow scope only when the user explicitly names a feature, activity, revision, or file scope. Resolve that scope from conversation and repository evidence; ask when the boundary remains ambiguous.
+- A checkpoint request authorizes the necessary checkpoint mutations. Execute unless the user asks for a proposal or command plan.
+- Establish the pending changes at the start of checkpointing. Leave newly arriving edits for a subsequent checkpoint.
+- Group changes by coherent outcome. Keep each feature or fix with its supporting tests and documentation; separate unrelated changes and order prerequisites before their consumers.
+- Prefer extracting each group into a new commit beneath @ while retaining the current working change. Leave unfinished or excluded changes in @; it need not be empty afterward.
+- Use file selection when files map cleanly to outcomes. Inspect and select hunks when a file contains changes belonging to different outcomes.
+- Use one coordinator for checkpoint mutations in a shared workspace. Settle writes to the selected files before extraction; JJ locks do not coordinate agents editing files.
+- Inspect each resulting commit and the remaining diff. Check that each checkpoint contains its intended changes and prerequisites.
+- Do not leave empty described checkpoints. A temporary empty destination is acceptable when immediately populated through squash.
+- Report the resulting commit IDs and descriptions, plus any changes left pending and why.
 
 Split and squash policy:
-- Suggest jj split only when a revision spans multiple semantic buckets that would be easier to review separately.
+- Use jj split to extract checkpoints beneath @ or to separate a revision containing multiple unrelated outcomes.
 - Do not split a small coherent revision just because multiple files changed.
 - Prefer file-based jj split when buckets map cleanly to whole files.
 - Prefer jj split --interactive when one file mixes multiple semantic buckets.
 - Suggest jj squash when adjacent revisions are artificial fragments of the same semantic change.
-- Preserve prerequisite ordering: refactor or plumbing first, then behavior, then tests, docs, tooling, or polish.
+- Order commits by actual dependencies. Keep supporting tests, documentation, and tooling with the outcome they serve when that produces a coherent commit.
 
 Commit message conventions:
 - Use Conventional Commits: type(optional-scope): concise imperative summary.
