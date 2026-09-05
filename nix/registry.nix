@@ -12,7 +12,7 @@
   nixos-base = import ./modules/nixos/base;
   ssh-server = import ./modules/nixos/ssh-server;
   tailscale = import ./modules/nixos/tailscale;
-  gnome-desktop = import ./modules/nixos/gnome-desktop;
+  cage-desktop = import ./modules/nixos/cage-desktop;
   server-power = import ./modules/nixos/server-power;
   maintenance = import ./modules/nixos/maintenance;
   harmonia-cache = import ./modules/nixos/harmonia-cache;
@@ -23,6 +23,5 @@
   darwin-server-power = import ./modules/darwin/server-power;
   darwin-server-remote-access = import ./modules/darwin/server-remote-access;
   darwin-desktop-apps = import ./modules/darwin/desktop-apps;
-  t3-desktop = import ./modules/darwin/t3-desktop;
   darwin-server-brew = import ./modules/darwin/homebrew;
 }

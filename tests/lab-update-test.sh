@@ -15,7 +15,7 @@ for host in hades poseidon; do
   grep -Fqx NetworkManager.service <<<"$manifest"
   grep -Fqx sshd.service <<<"$manifest"
   grep -Fqx tailscaled.service <<<"$manifest"
-  if [[ $host == poseidon ]]; then grep -Fqx display-manager.service <<<"$manifest"; fi
+  ! grep -Fqx display-manager.service <<<"$manifest"
 done
 # Exercise the driver's canonical manifest contract with immutable-style symlinks.
 t=$(mktemp -d); trap 'rm -rf "$t"' EXIT

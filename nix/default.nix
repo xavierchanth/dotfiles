@@ -184,6 +184,24 @@ in builtins.seq checked (builtins.seq deployValidation {
   homeConfigurations = builtins.listToAttrs (map (hostname: { name = "${username}@${hostname}"; value = mkHome hostname; }) (builtins.attrNames supportedHomeHosts));
   checks = lib.recursiveUpdate
     (lib.genAttrs systems (system: let pkgs = pkgsFor system; in {
+      handoff-reference = import ./handoff-reference-package.nix { inherit pkgs; };
+      cage-mcp-protocol = pkgs.runCommand "cage-mcp-protocol-tests" {
+        nativeBuildInputs = [ (pkgs.python3.withPackages (p: [ p.mcp p.pillow ])) ];
+        TEST_ROOT = flakeSource;
+        PYTHONDONTWRITEBYTECODE = "1";
+      } ''
+        python3 ${../tests/cage-mcp.py}
+        touch "$out"
+      '';
+      cage-session-scripts = pkgs.runCommand "cage-session-script-tests" {
+        nativeBuildInputs = [ pkgs.bash pkgs.python3 pkgs.shellcheck ];
+        TEST_ROOT = flakeSource;
+        TEST_BASH = "${pkgs.bash}/bin/bash";
+      } ''
+        shellcheck ${../scripts/cage-session.sh} ${../scripts/cage-session-app.sh}
+        python3 ${../tests/cage-session.py}
+        touch "$out"
+      '';
       deploy-invariants = pkgs.runCommand "deploy-invariant-tests" { nativeBuildInputs = [ pkgs.bash pkgs.coreutils pkgs.gnugrep pkgs.gnused pkgs.python3 deploy-rs.packages.${system}.default ]; DEPLOY_SCRIPT = ../scripts/deploy; CONSUMER_SCRIPT = ../scripts/consume-deploy-credential; DEPLOY_RS_REAL = "${deploy-rs.packages.${system}.default}/bin/deploy"; } ''
         DEPLOY_SUPERVISOR=${allPackages.${system}.deploy-supervisor} TEST_BASH=${pkgs.bash}/bin/bash ${pkgs.bash}/bin/bash ${../tests/deploy.sh}
         ${pkgs.python3}/bin/python3 ${../tests/deploy-supervisor.py} ${allPackages.${system}.deploy-supervisor}

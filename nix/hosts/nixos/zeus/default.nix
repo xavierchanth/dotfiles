@@ -1,1 +1,1 @@
-{ groups = [ "gnome-desktop" "mise-workstation" ]; modules = [ ./platform.nix ]; }
+{ groups = [ "cage-desktop" "mise-workstation" ]; modules = [ ./platform.nix ]; }
