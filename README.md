@@ -26,6 +26,7 @@ fit best as tracked dotfiles.
 See the [machine inventory](docs/hosts.md) for all machines and their assigned
 roles, including unmanaged Windows hosts. The [lab strategy](docs/lab/strategy.md)
 and [shared Docker plan](docs/lab/docker.md) describe execution and service placement.
+See [Jio configuration](docs/jio.md) for private package fetching and personal agent setup.
 
 - System configuration with `nix-darwin`
 - User environment with Home Manager
