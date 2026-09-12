@@ -86,7 +86,6 @@
       resvg
 
       # CLI Apps
-      gh
       yazi
 
       # Programming Languages
@@ -95,12 +94,12 @@
       ninja
       postgresql_16
     ])
-    ++ lib.optionals pkgs.stdenv.isDarwin (with pkgs; [
+    ++ lib.optionals pkgs.stdenv.hostPlatform.isDarwin (with pkgs; [
       # Mac only
       docker-credential-helpers
       iproute2mac
     ])
-    ++ lib.optionals (!pkgs.stdenv.isDarwin) (with pkgs; [
+    ++ lib.optionals (!pkgs.stdenv.hostPlatform.isDarwin) (with pkgs; [
       # Linux
       traceroute
       iproute2

@@ -1,6 +1,6 @@
 ---
 name: pr-management
-description: Prepare, review, update, repair checks on, or monitor GitHub pull requests. Route PR management requests through focused workflows and reusable capabilities.
+description: Prepare, review, update, stack, repair checks on, or monitor GitHub pull requests. Route PR management requests through focused workflows and reusable capabilities.
 ---
 
 Manage PRs so intent, review evidence, and current state remain clear. Use GitHub CLI (`gh`) for GitHub reads and authorized writes. Scale work and explanation to the change.
@@ -15,6 +15,7 @@ Interpret the requested outcome and carry existing scope and authorization forwa
 | Review | Review a PR; assess readiness | Inspect, isolated checkout, assess, verify, report, clean up | [Review](workflows/review.md) |
 | Address feedback | Handle review comments | Inspect, assess, amend, verify, communicate when authorized | [Address feedback](workflows/address-feedback.md) |
 | Repair checks | Investigate or fix CI | Inspect, diagnose, amend or retry, verify | [Repair checks](workflows/repair-checks.md) |
+| Stacked PRs | Create, extend, update, advance or recover a native GitHub PR stack | Inspect, manage linear history, publish PRs, link and verify | [Stacked PRs](workflows/gh-stacked-prs.md) |
 | Monitor or babysit | Watch a PR; maintain it until ready | Track, route actionable changes, reassess | [Babysit](workflows/babysit.md) |
 
 ## Choose capabilities
