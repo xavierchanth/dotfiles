@@ -12,6 +12,7 @@
   nixos-base = import ./modules/nixos/base;
   ssh-server = import ./modules/nixos/ssh-server;
   tailscale = import ./modules/nixos/tailscale;
+  docker-host = import ./modules/nixos/docker-host;
   cage-desktop = import ./modules/nixos/cage-desktop;
   server-power = import ./modules/nixos/server-power;
   maintenance = import ./modules/nixos/maintenance;
