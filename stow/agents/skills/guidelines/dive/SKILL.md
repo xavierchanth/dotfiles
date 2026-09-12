@@ -28,11 +28,15 @@ Enter the cycle at the stage matching the request and available work. Carry exis
 
 ## Design
 
-Start a Design subagent with [design.md](references/design.md), the request, established decisions, relevant context, and the questions to resolve. Continue with the same subagent as the discussion develops.
+Start a Design subagent with [design.md](references/design.md), the request, relevant user-provided context, established decisions and their rationale, and the questions to resolve. Continue with the same subagent as the discussion develops.
 
-Bring material choices to the user and relay their feedback to the Design subagent. Ensure the plan carries their answers and the reasons behind decisions.
+Have Design investigate uncertainties that materially affect the approach, using research or small experiments where useful. Ensure findings inform decisions and unresolved assumptions remain visible.
 
-Before implementation, establish that the plan provides clear intent, verifiable outcomes, dependencies, coupled changes, and acceptance checks. Return unresolved questions to Design.
+Act as the intermediary for designer questions. Before asking the user, check the conversation and established decisions for a clear answer. When the user has already supplied the answer, relay it directly to Design with the supporting context.
+
+When answering would require a new assumption, a decision on the user’s behalf, or clarification of ambiguous or conflicting context, ask the user about the unresolved part and relay their response to Design. Preserve the distinction between established user intent and proposed choices. Ensure the plan carries their answers and the reasons behind decisions.
+
+Use the lightweight plan structure in [design.md](references/design.md) to preserve the original goal, key design decisions, implementation plan, and acceptance checks with open questions. Before implementation, establish that intent is explicit, consequential decisions are agreed, dependencies and coupled changes are understood, and checks establish the intended outcome. Return unresolved questions to Design.
 
 Present the plan inline unless the user specifies another destination. Align with the user before implementation, and return new evidence that changes the agreed direction to Design.
 
