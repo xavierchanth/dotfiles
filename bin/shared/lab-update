@@ -9,10 +9,24 @@ DRY_RUN=0
 [[ ${1:-} != --dry-run ]] || { DRY_RUN=1; shift; }
 [[ $# == 1 ]] || { usage; exit 64; }
 HOST=$1; [[ $HOST == hades ]] || die "unsupported host: $HOST"
+: "${LAB_UPDATE_TARGET:?run lab-update through the packaged flake app}"
+: "${LAB_UPDATE_SSH_USER:?run lab-update through the packaged flake app}"
+: "${LAB_UPDATE_IDENTITY:?run lab-update through the packaged flake app}"
+: "${LAB_UPDATE_PROXY_JUMP:?run lab-update through the packaged flake app}"
+TARGET=$LAB_UPDATE_TARGET
+SSH_USER=$LAB_UPDATE_SSH_USER
+IDENTITY=$LAB_UPDATE_IDENTITY
+PROXY_JUMP=$LAB_UPDATE_PROXY_JUMP
+[[ $TARGET =~ ^[a-zA-Z0-9][a-zA-Z0-9.-]*$ && $SSH_USER =~ ^[a-z_][a-z0-9_-]*$ ]] || die 'invalid packaged SSH route'
+[[ $IDENTITY == - || $IDENTITY =~ ^\.ssh/[a-zA-Z0-9._-]+$ ]] || die 'invalid packaged identity file'
+[[ $PROXY_JUMP == - || $PROXY_JUMP =~ ^[a-zA-Z0-9][a-zA-Z0-9.-]*$ ]] || die 'invalid packaged proxy jump'
 SSH=(ssh -o BatchMode=yes -o ControlMaster=no -o ControlPath=none -o ConnectTimeout=10 -o ServerAliveInterval=5 -o ServerAliveCountMax=3)
+[[ $IDENTITY == - ]] || SSH+=(-o IdentitiesOnly=yes -i "$HOME/$IDENTITY")
+[[ $PROXY_JUMP == - ]] || SSH+=(-o "ProxyJump=$PROXY_JUMP")
+ENDPOINT="$SSH_USER@$TARGET"
 phases=("snapshot tracked source" "unprivileged remote preflight" "confirm staging" "unprivileged private staging" "unprivileged target-local build" "unprivileged closure inspection" "confirm activation" "one attended PTY sudo rollout" "unprivileged bounded rollout observation" "optional attended reboot")
 if (( DRY_RUN )); then
-  echo 'DRY RUN: no SSH or network calls will be made'; printf 'host: %s\n' "$HOST"; printf 'phase: %s\n' "${phases[@]}"; exit
+  echo 'DRY RUN: no SSH or network calls will be made'; printf 'host: %s\ntransport: %s\n' "$HOST" "$ENDPOINT"; printf 'phase: %s\n' "${phases[@]}"; exit
 fi
 for c in ssh tar shasum jj; do command -v "$c" >/dev/null || die "$c is required"; done
 T=$(mktemp -d "${TMPDIR:-/tmp}/lab-update.XXXXXX"); trap 'rm -rf "$T"' EXIT
@@ -95,7 +109,7 @@ DRIVER_SHA=$(shasum -a 256 "$T/driver" | cut -d ' ' -f 1)
 [[ $DRIVER_SHA =~ ^[0-9a-f]{64}$ ]] || die 'invalid driver SHA-256'
 
 # Every data-bearing and observational connection is non-PTY and unprivileged.
-PRE=$("${SSH[@]}" "$HOST" 'bash -s' <<'REMOTE'
+PRE=$("${SSH[@]}" "$ENDPOINT" 'bash -s' <<'REMOTE'
 set -Eeuo pipefail
 [[ $(uname -s) == Linux && -e /etc/NIXOS ]]
 u=$(id -un); id -nG "$u" | tr ' ' '\n' | grep -qx wheel
@@ -114,31 +128,31 @@ printf '%s\n' "$PRE"; BASE_FAILED=$(sed -n 's/^FAILED=//p' <<<"$PRE"); BOOTED=$(
 [[ $BASE_FAILED =~ ^[A-Za-z0-9@_.:,~-]*$ ]] || die 'unsafe failed-unit baseline'
 [[ $BOOTED =~ ^/nix/store/[a-z0-9]{32}-[A-Za-z0-9._+=-]+$ ]] || die 'unsafe booted system path'
 read -r -p "Type 'update $HOST' to stage and build: " a; [[ $a == "update $HOST" ]] || die 'not confirmed'
-REMOTE_DIR=$("${SSH[@]}" "$HOST" 'umask 077; d=$(mktemp -d /var/tmp/lab-update.XXXXXXXX); printf "%s\n" "$d"')
+REMOTE_DIR=$("${SSH[@]}" "$ENDPOINT" 'umask 077; d=$(mktemp -d /var/tmp/lab-update.XXXXXXXX); printf "%s\n" "$d"')
 [[ $REMOTE_DIR =~ ^/var/tmp/lab-update\.[A-Za-z0-9]{8}$ ]] || die 'unsafe staging path'
-cleanup() { "${SSH[@]}" "$HOST" "rm -rf -- $REMOTE_DIR" >/dev/null 2>&1 || true; rm -rf "$T"; }
+cleanup() { "${SSH[@]}" "$ENDPOINT" "rm -rf -- $REMOTE_DIR" >/dev/null 2>&1 || true; rm -rf "$T"; }
 trap cleanup EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM HUP
-"${SSH[@]}" "$HOST" "tar --no-same-owner -xf - -C $REMOTE_DIR" <"$T/source.tar"
-"${SSH[@]}" "$HOST" "cat >$REMOTE_DIR/rollout-driver && chmod 0700 $REMOTE_DIR/rollout-driver" <"$T/driver"
-REMOTE_SHA=$("${SSH[@]}" "$HOST" "sha256sum $REMOTE_DIR/rollout-driver" | awk '{print $1}')
+"${SSH[@]}" "$ENDPOINT" "tar --no-same-owner -xf - -C $REMOTE_DIR" <"$T/source.tar"
+"${SSH[@]}" "$ENDPOINT" "cat >$REMOTE_DIR/rollout-driver && chmod 0700 $REMOTE_DIR/rollout-driver" <"$T/driver"
+REMOTE_SHA=$("${SSH[@]}" "$ENDPOINT" "sha256sum $REMOTE_DIR/rollout-driver" | awk '{print $1}')
 [[ $REMOTE_SHA == "$DRIVER_SHA" ]] || die 'staged driver hash mismatch'
-BUILD=$("${SSH[@]}" "$HOST" "nix build --no-link --no-write-lock-file --print-out-paths --builders '' $REMOTE_DIR#nixosConfigurations.$HOST.config.system.build.toplevel") || die 'build failed'
+BUILD=$("${SSH[@]}" "$ENDPOINT" "nix build --no-link --no-write-lock-file --print-out-paths --builders '' $REMOTE_DIR#nixosConfigurations.$HOST.config.system.build.toplevel") || die 'build failed'
 mapfile -t paths < <(grep '^/nix/store/' <<<"$BUILD"); [[ ${#paths[@]} == 1 ]] || die 'expected one closure'; CLOSURE=${paths[0]}
 [[ $CLOSURE =~ ^/nix/store/[a-z0-9]{32}-[A-Za-z0-9._+=-]+$ ]] || die 'unsafe closure path'
-"${SSH[@]}" "$HOST" "nix path-info $CLOSURE >/dev/null && test -x $CLOSURE/bin/switch-to-configuration && test -x $CLOSURE/sw/bin/sshd && nix store diff-closures \$(readlink -f /run/current-system) $CLOSURE && test -r $CLOSURE/etc/ssh/sshd_config && test -r $CLOSURE/etc/fstab && test -r $CLOSURE/etc/lab-update/required-units && grep -Fqx sshd.service $CLOSURE/etc/lab-update/required-units && grep -Fqx tailscaled.service $CLOSURE/etc/lab-update/required-units && grep -Fqx NetworkManager.service $CLOSURE/etc/lab-update/required-units && findmnt --verify --tab-file $CLOSURE/etc/fstab && awk '\$2==\"/\"{ok=1} END{exit !ok}' $CLOSURE/etc/fstab && ! findmnt -nro OPTIONS /boot 2>/dev/null | grep -Eq '(^|,)ro(,|$)'" || die 'closure inspection failed (check required files and units, fstab root entry, and /boot mount options)'
+"${SSH[@]}" "$ENDPOINT" "nix path-info $CLOSURE >/dev/null && test -x $CLOSURE/bin/switch-to-configuration && test -x $CLOSURE/sw/bin/sshd && nix store diff-closures \$(readlink -f /run/current-system) $CLOSURE && test -r $CLOSURE/etc/ssh/sshd_config && test -r $CLOSURE/etc/fstab && test -r $CLOSURE/etc/lab-update/required-units && grep -Fqx sshd.service $CLOSURE/etc/lab-update/required-units && grep -Fqx tailscaled.service $CLOSURE/etc/lab-update/required-units && grep -Fqx NetworkManager.service $CLOSURE/etc/lab-update/required-units && findmnt --verify --tab-file $CLOSURE/etc/fstab && awk '\$2==\"/\"{ok=1} END{exit !ok}' $CLOSURE/etc/fstab && ! findmnt -nro OPTIONS /boot 2>/dev/null | grep -Eq '(^|,)ro(,|$)'" || die 'closure inspection failed (check required files and units, fstab root entry, and /boot mount options)'
 read -r -p "Type 'activate $HOST' to start the rollback-protected rollout: " a; [[ $a == "activate $HOST" ]] || die 'activation not confirmed'
 [[ -t 0 ]] || die 'the attended privileged phase requires a local stdin TTY'
 # Exactly one data-free attended connection. sudo reads the password directly from its TTY.
 # Encode empty distinctly so argv[2] is present through both remote-shell layers.
 if [[ -z $BASE_FAILED ]]; then qbase=__LAB_UPDATE_EMPTY__; else printf -v qbase '%q' "$BASE_FAILED"; fi
 PTY_CMD="sudo /bin/sh -ceu 'test \"\$(sha256sum $REMOTE_DIR/rollout-driver | cut -d \" \" -f 1)\" = $DRIVER_SHA; $CLOSURE/sw/bin/sshd -t -f $CLOSURE/etc/ssh/sshd_config; systemctl stop lab-update-rollout.service 2>/dev/null || true; systemctl reset-failed lab-update-rollout.service 2>/dev/null || true; install -o root -g root -m 0500 $REMOTE_DIR/rollout-driver /run/lab-update-driver; test \"\$(stat -c %U:%G:%a /run/lab-update-driver)\" = root:root:500; test \"\$(sha256sum /run/lab-update-driver | cut -d \" \" -f 1)\" = $DRIVER_SHA; systemd-run --unit=lab-update-rollout --property=RemainAfterExit=yes --property=RuntimeMaxSec=600 --property=TimeoutStopSec=210 --setenv=PATH=$BOOTED/sw/bin --setenv=HOME=/root --setenv=LC_ALL=C --no-block /run/lab-update-driver $CLOSURE $qbase'"
-"${SSH[@]}" -tt "$HOST" "$PTY_CMD" || die 'rollout launch failed; an armed reboot may remain pending (rollback is not guaranteed)'
+"${SSH[@]}" -tt "$ENDPOINT" "$PTY_CMD" || die 'rollout launch failed; an armed reboot may remain pending (rollback is not guaranteed)'
 # 780s leaves a two-minute margin before the 900s dead-man while covering RuntimeMaxSec plus rollback.
 deadline=$((SECONDS+780)); observed=0
 while (( SECONDS < deadline )); do
-  out=$("${SSH[@]}" "$HOST" "timeout 25 sh -c 'systemctl show lab-update-rollout.service -p LoadState -p ActiveState -p SubState -p Result -p ExecMainStatus; printf \"CURRENT=%s\\nPROFILE=%s\\n\" \"\$(readlink -f /run/current-system)\" \"\$(readlink -f /nix/var/nix/profiles/system)\"'" 2>/dev/null) || { sleep 5; continue; }
+  out=$("${SSH[@]}" "$ENDPOINT" "timeout 25 sh -c 'systemctl show lab-update-rollout.service -p LoadState -p ActiveState -p SubState -p Result -p ExecMainStatus; printf \"CURRENT=%s\\nPROFILE=%s\\n\" \"\$(readlink -f /run/current-system)\" \"\$(readlink -f /nix/var/nix/profiles/system)\"'" 2>/dev/null) || { sleep 5; continue; }
   declare -A state=(); complete=1
   while IFS='=' read -r key value; do case $key in LoadState|ActiveState|SubState|Result|ExecMainStatus|CURRENT|PROFILE) state[$key]=$value;; esac; done <<<"$out"
   for key in LoadState ActiveState SubState Result ExecMainStatus CURRENT PROFILE; do [[ -v state[$key] ]] || complete=0; done
@@ -159,4 +173,4 @@ while (( SECONDS < deadline )); do
 done
 (( observed )) || die 'rollout observation timed out; dead-man may remain armed'
 read -r -p "Type 'reboot $HOST' for an attended reboot, or Enter to finish: " a
-if [[ $a == "reboot $HOST" ]]; then "${SSH[@]}" -tt "$HOST" 'sudo systemctl reboot' || echo 'reboot requested; SSH disconnected during reboot' >&2; fi
+if [[ $a == "reboot $HOST" ]]; then "${SSH[@]}" -tt "$ENDPOINT" 'sudo systemctl reboot' || echo 'reboot requested; SSH disconnected during reboot' >&2; fi

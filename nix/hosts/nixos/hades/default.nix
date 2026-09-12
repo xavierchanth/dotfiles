@@ -1,1 +1,1 @@
-{ groups = [ "docker-host" "mise-workstation" ]; modules = [ ./platform.nix ]; }
+{ groups = [ "jio" "docker-host" "mise-workstation" ]; modules = [ ./platform.nix ]; }

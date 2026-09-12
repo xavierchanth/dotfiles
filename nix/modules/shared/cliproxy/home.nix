@@ -156,7 +156,7 @@ PY
     fi
   '';
 
-  launchd.agents.cpa-manager-plus = lib.mkIf pkgs.stdenv.isDarwin {
+  launchd.agents.cpa-manager-plus = lib.mkIf pkgs.stdenv.hostPlatform.isDarwin {
     enable = true;
     config = {
       ProgramArguments = ["${cpampHome}/cpa-manager-plus"];

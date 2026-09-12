@@ -24,6 +24,9 @@ deploy *args:
 deploy-lab:
   nix run .#deploy -- lab
 
+deploy-linux:
+  nix run .#deploy -- linux
+
 deploy-host host:
   nix run .#deploy -- {{host}}
 

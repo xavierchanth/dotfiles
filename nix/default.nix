@@ -1,7 +1,9 @@
 {inputs}: let
   inherit (inputs) nixpkgs nix-darwin home-manager deploy-rs;
   lib = nixpkgs.lib;
+  jioPackageFor = pkgs: inputs.jio.packages.${pkgs.stdenv.hostPlatform.system}.jio;
   username = "chant";
+  deployment = import ./deployment.nix;
   inventory = import ./inventory.nix;
   profiles = import ./profiles.nix;
   openwrtProfiles = import ./openwrt/profiles.nix;
@@ -31,7 +33,7 @@
     declaration = declarationFor host.kind hostname;
     groupNames = profileGroups ++ (host.groups or []) ++ declaration.groups;
   in builtins.seq _compatible {
-    inherit inputs username hostname inventory;
+    inherit inputs username hostname inventory jioPackageFor deployment;
     hostProfile = host // { profileName = host.profile; profile = mapping.legacy; };
     resolvedGroups = resolve { inherit registry; kind = host.kind; groups = groupNames; };
   };
@@ -99,16 +101,21 @@
      assert has "mise" "hades" && hasCompiler "hades" && activation "hades" ? installMiseTools;
      assert lib.all (name: (activation name).installMiseTools.after == [ "stowDotfiles" ]) credentialDeployNames;
      assert lib.all (name: (mkNixos name).config.programs.nix-ld.enable && (mkNixos name).config.systemd.services."home-manager-${username}".serviceConfig.TimeoutStartSec == "1h") credentialNixosHosts;
+     assert lib.all (name: lib.hasInfix "export MISE_NODE_COMPILE=false" (miseText name)) credentialNixosHosts;
+     assert lib.all (name: !(lib.hasInfix "export MISE_NODE_COMPILE=false" (miseText name))) [ "nyx" "eris" ];
      assert lib.all (name: lib.hasInfix "SSL_CERT_FILE=" (miseText name) && lib.hasInfix "MISE_GITHUB_TOKEN=" (miseText name) && lib.hasInfix ''"$PATH"'' (miseText name) && lib.hasInfix "timeout 5s" (miseText name)) credentialDeployNames;
      assert lib.all (name: !(lib.hasInfix ''cleanup_stow_links mise '' (stowText name))) credentialDeployNames;
      assert !(lib.hasInfix ''cleanup_stow_links mise '' (stowText "hades")); true;
   inventoryValidation = let
     charon = inventory.charon;
     deployed = lab.deploymentOrder;
+    dedicatedLinux = lib.filter (name: inventory.${name}.kind == "nixos" && (inventory.${name}.deployment.useDedicatedUser or false)) deployed;
   in assert charon.kind == "openwrt" && charon.profile == "openwrt-router" && !(charon ? system);
      assert openwrtProfiles ? ${charon.profile};
      assert openwrtProfiles.${charon.profile}.managesPrivateDns && openwrtProfiles.${charon.profile}.attendedOnly;
-     assert lib.all (name: inventory.${name}.lab.deploy or false) deployed; true;
+     assert lib.all (name: inventory.${name}.lab.deploy or false) deployed;
+     assert dedicatedLinux == [] || deployment.authorizedKeys != [];
+     true;
   darwinServerValidation = let
     eris = (mkDarwin "eris").config;
   in assert eris.services.openssh.enable == true;
@@ -116,20 +123,24 @@
      assert eris.system.defaults.loginwindow.autoLoginUser == null;
      assert !(builtins.elem "tailscale-app" eris.homebrew.casks);
      true;
+  jioValidation = import ./tests/jio.nix { inherit lib mkHome home-manager jioPackageFor pkgsFor; };
   checked = builtins.deepSeq validKinds (assert resolverTests; assert profileTests; assert codingValidation; assert inventoryValidation; assert darwinServerValidation; true);
-  systems = [ "aarch64-darwin" "x86_64-darwin" "aarch64-linux" "x86_64-linux" ];
+  systems = [ "aarch64-darwin" "aarch64-linux" "x86_64-linux" ];
   deployNodes = attrs deployNames (name: let
     host = inventory.${name};
     route = host.deployment or {};
+    dedicated = host.kind == "nixos" && (route.useDedicatedUser or false);
   in {
     hostname = route.targetAddress or name;
-    sshUser = username;
+    sshUser = if dedicated then deployment.user else username;
     groups = [ "lab" ];
     remoteBuild = true;
     interactiveSudo = true;
     autoRollback = true;
     magicRollback = host.kind == "nixos"; # deploy-rs' inotify rollback is not portable to Darwin.
-    sshOpts = [ "-o" "ControlMaster=no" "-o" "ControlPath=none" "-o" "ServerAliveInterval=5" "-o" "ServerAliveCountMax=3" "-o" "ConnectTimeout=10" ] ++ lib.optionals (route ? proxyJump) [ "-o" "ProxyJump=${route.proxyJump}" ];
+    sshOpts = [ "-o" "ControlMaster=no" "-o" "ControlPath=none" "-o" "ServerAliveInterval=5" "-o" "ServerAliveCountMax=3" "-o" "ConnectTimeout=10" ]
+      ++ lib.optionals dedicated [ "-o" "IdentitiesOnly=yes" "-o" "IdentityFile=~/${deployment.identityFile}" ]
+      ++ lib.optionals (route ? proxyJump) [ "-o" "ProxyJump=${route.proxyJump}" ];
     activationTimeout = if builtins.elem name credentialDeployNames then 3900 else 600;
     confirmTimeout = 60;
     profiles.system = {
@@ -145,11 +156,17 @@
     assert lib.all (n: deployNodes.${n}.groups == [ "lab" ]) deployNames;
     assert lib.all (n: n == "eris" || deployNodes.${n}.hostname == n) deployNames;
     assert deployNodes.eris.hostname == inventory.eris.lab.address;
+    assert lib.all (n: let
+      dedicated = inventory.${n}.kind == "nixos" && (inventory.${n}.deployment.useDedicatedUser or false);
+    in deployNodes.${n}.sshUser == (if dedicated then deployment.user else username)) deployNames;
+    assert deployNodes.eris.sshUser == username;
     assert deployNodes.eris.sshOpts == [ "-o" "ControlMaster=no" "-o" "ControlPath=none" "-o" "ServerAliveInterval=5" "-o" "ServerAliveCountMax=3" "-o" "ConnectTimeout=10" "-o" "ProxyJump=hades" ];
     assert lib.all (n: deployNodes.${n}.activationTimeout == 3900) credentialDeployNames; true;
   deployConfig = { nodes = deployNodes; };
   deployInventory = builtins.concatStringsSep "" (map (name:
-    "${name}\t${inventory.${name}.kind}\t${inventory.${name}.system}\t${if deployCredentialsFor name == [] then "-" else lib.concatStringsSep "," (deployCredentialsFor name)}\n") deployNames);
+    let route = inventory.${name}.deployment or {}; in
+    let dedicated = inventory.${name}.kind == "nixos" && (route.useDedicatedUser or false); in
+    "${name}\t${inventory.${name}.kind}\t${inventory.${name}.system}\t${if deployCredentialsFor name == [] then "-" else lib.concatStringsSep "," (deployCredentialsFor name)}\t${route.targetAddress or name}\t${route.proxyJump or "-"}\t${if dedicated then deployment.user else username}\t${if dedicated then deployment.identityFile else "-"}\n") deployNames);
   flakeSource = inputs.self.outPath;
   allPackages = lib.genAttrs systems (system: let pkgs = pkgsFor system; in rec {
     openwrt-charon-uci = pkgs.writeText "charon-uci" openwrtRender;
@@ -162,12 +179,22 @@
       #!${pkgs.python3}/bin/python3
       ${builtins.readFile ../scripts/deploy-supervisor.py}
     '';
-    lab-update = pkgs.writeShellApplication { name = "lab-update"; runtimeInputs = [ pkgs.bash pkgs.coreutils pkgs.gnused pkgs.gnugrep pkgs.gawk pkgs.perl pkgs.openssh pkgs.jujutsu pkgs.gnutar pkgs.nix ]; excludeShellChecks = [ "SC2016" ]; text = builtins.readFile ../bin/shared/lab-update; };
+    lab-update = let
+      route = inventory.hades.deployment;
+      dedicated = route.useDedicatedUser or false;
+    in pkgs.writeShellApplication { name = "lab-update"; runtimeInputs = [ pkgs.bash pkgs.coreutils pkgs.gnused pkgs.gnugrep pkgs.gawk pkgs.perl pkgs.openssh pkgs.jujutsu pkgs.gnutar pkgs.nix ]; excludeShellChecks = [ "SC2016" ]; text = ''
+      export LAB_UPDATE_TARGET=${lib.escapeShellArg (route.targetAddress or "hades")}
+      export LAB_UPDATE_SSH_USER=${lib.escapeShellArg (if dedicated then deployment.user else username)}
+      export LAB_UPDATE_IDENTITY=${lib.escapeShellArg (if dedicated then deployment.identityFile else "-")}
+      export LAB_UPDATE_PROXY_JUMP=${lib.escapeShellArg (route.proxyJump or "-")}
+      ${builtins.readFile ../bin/shared/lab-update}
+    ''; };
     deploy-cli = pkgs.writeShellApplication { name = "deploy"; runtimeInputs = [ pkgs.bash pkgs.coreutils pkgs.openssh pkgs.nix pkgs.jujutsu pkgs.gh ]; text = ''
       export DEPLOY_FLAKE=${lib.escapeShellArg (toString flakeSource)}
       export DEPLOY_INVENTORY=${lib.escapeShellArg (toString deploy-inventory)}
       export DEPLOY_RS=${lib.escapeShellArg "${deploy-rs.packages.${system}.default}/bin/deploy"}
       export DEPLOY_SUPERVISOR=${lib.escapeShellArg "${deploy-supervisor}"}
+      export DEPLOY_PREFLIGHT=${lib.escapeShellArg (toString ../scripts/deploy-preflight)}
       export LAB_UPDATE=${lib.escapeShellArg "${lab-update}/bin/lab-update"}
       ${builtins.readFile ../scripts/deploy}
     ''; };
@@ -175,8 +202,8 @@
 in builtins.seq checked (builtins.seq deployValidation {
   packages = allPackages;
   apps = lib.genAttrs systems (system: {
-    deploy = { type = "app"; program = "${allPackages.${system}.deploy-cli}/bin/deploy"; };
-    openwrt-apply-charon = { type = "app"; program = "${allPackages.${system}.openwrt-apply-charon}/bin/openwrt-apply-charon"; };
+    deploy = { type = "app"; program = "${allPackages.${system}.deploy-cli}/bin/deploy"; meta.description = "Deploy a configured lab host with deploy-rs"; };
+    openwrt-apply-charon = { type = "app"; program = "${allPackages.${system}.openwrt-apply-charon}/bin/openwrt-apply-charon"; meta.description = "Apply the managed Charon router DNS configuration"; };
   });
   deploy = deployConfig;
   darwinConfigurations = attrs (builtins.attrNames darwinHosts) mkDarwin;
@@ -185,6 +212,31 @@ in builtins.seq checked (builtins.seq deployValidation {
   checks = lib.recursiveUpdate
     (lib.genAttrs systems (system: let pkgs = pkgsFor system; in {
       handoff-reference = import ./handoff-reference-package.nix { inherit pkgs; };
+      jio-config = assert jioValidation; pkgs.runCommand "jio-config-tests" {
+        nativeBuildInputs = [ (jioPackageFor pkgs) ];
+      } ''
+        mkdir -p config data state runtime
+        cp ${(mkHome "nyx").config.xdg.configFile."jio/config.toml".source} config/config.toml
+        cp ${(mkHome "nyx").config.xdg.configFile."jio/projects.toml".source} config/projects.toml
+        jio --config-dir "$PWD/config" --data-dir "$PWD/data" --state-dir "$PWD/state" --runtime-dir "$PWD/runtime" doctor > "$out"
+      '';
+      jio-release = pkgs.runCommand "jio-release-tests" {
+        nativeBuildInputs = [ pkgs.python3 ];
+        JIO_RELEASE_HELPER = ../scripts/jio-release;
+        PYTHONDONTWRITEBYTECODE = "1";
+      } ''
+        python3 ${../tests/jio-release.py}
+        touch "$out"
+      '';
+      jio-fetch-auth = pkgs.runCommand "jio-fetch-auth-tests" {
+        nativeBuildInputs = [ pkgs.bash pkgs.python3 ];
+        JIO_AUTH_HELPER = ../scripts/nix-with-github;
+        TEST_BASH = "${pkgs.bash}/bin/bash";
+      } ''
+        python3 ${../tests/nix-with-github.py}
+        touch "$out"
+      '';
+
       cage-mcp-protocol = pkgs.runCommand "cage-mcp-protocol-tests" {
         nativeBuildInputs = [ (pkgs.python3.withPackages (p: [ p.mcp p.pillow ])) ];
         TEST_ROOT = flakeSource;
@@ -203,6 +255,8 @@ in builtins.seq checked (builtins.seq deployValidation {
         touch "$out"
       '';
       deploy-invariants = pkgs.runCommand "deploy-invariant-tests" { nativeBuildInputs = [ pkgs.bash pkgs.coreutils pkgs.gnugrep pkgs.gnused pkgs.python3 deploy-rs.packages.${system}.default ]; DEPLOY_SCRIPT = ../scripts/deploy; CONSUMER_SCRIPT = ../scripts/consume-deploy-credential; DEPLOY_RS_REAL = "${deploy-rs.packages.${system}.default}/bin/deploy"; } ''
+        export DEPLOY_PREFLIGHT=${../scripts/deploy-preflight}
+        TEST_BASH=${pkgs.bash}/bin/bash ${pkgs.bash}/bin/bash ${../tests/deploy-preflight.sh}
         DEPLOY_SUPERVISOR=${allPackages.${system}.deploy-supervisor} TEST_BASH=${pkgs.bash}/bin/bash ${pkgs.bash}/bin/bash ${../tests/deploy.sh}
         ${pkgs.python3}/bin/python3 ${../tests/deploy-supervisor.py} ${allPackages.${system}.deploy-supervisor}
         # Exercise every wrapper mode against the pinned parser. The invalid local
@@ -212,6 +266,14 @@ in builtins.seq checked (builtins.seq deployValidation {
           ! grep -Eqi 'unexpected argument|unknown (argument|option)|unrecognized option' "parser-$mode.log"
         done
         touch $out
+      '';
+      managed-stow = pkgs.runCommand "managed-stow-tests" {
+        nativeBuildInputs = [ pkgs.python3 pkgs.stow ];
+        TEST_ROOT = flakeSource;
+        PYTHONDONTWRITEBYTECODE = "1";
+      } ''
+        python3 ${../tests/managed-stow.py}
+        touch "$out"
       '';
     } // lib.optionalAttrs (builtins.elem system [ "aarch64-darwin" "x86_64-linux" ]) {
       resolver-evaluation = assert resolverTests; pkgs.runCommand "resolver-evaluation" {} ''

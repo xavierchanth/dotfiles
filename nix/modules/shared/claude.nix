@@ -64,7 +64,7 @@
     '';
   };
 in {
-  home.packages = lib.optionals pkgs.stdenv.isDarwin [themeSync];
+  home.packages = lib.optionals pkgs.stdenv.hostPlatform.isDarwin [themeSync];
 
   home.activation.claudeSettings = lib.hm.dag.entryAfter ["writeBoundary"] ''
     settings="${settingsPath}"
@@ -97,7 +97,7 @@ in {
       echo "claude.nix: could not merge settings into $settings" >&2
     fi
 
-    ${lib.optionalString pkgs.stdenv.isDarwin "${themeSync}/bin/claude-theme-sync || true"}
+    ${lib.optionalString pkgs.stdenv.hostPlatform.isDarwin "${themeSync}/bin/claude-theme-sync || true"}
   '';
 
   # Claude Code only discovers ~/.claude/skills/<name>/SKILL.md — no recursion,
@@ -135,7 +135,7 @@ in {
 
   # WatchPaths catches the appearance toggle as cfprefsd flushes the global
   # preferences; StartInterval is a backstop for when that write is coalesced.
-  launchd.agents = lib.optionalAttrs pkgs.stdenv.isDarwin {
+  launchd.agents = lib.optionalAttrs pkgs.stdenv.hostPlatform.isDarwin {
     claude-theme-sync = {
       enable = true;
       config = {

@@ -3,12 +3,15 @@
   terminal-core = import ./modules/shared/terminal-core;
   ssh = import ./modules/shared/ssh;
   ai-applications = import ./modules/shared/ai-applications;
+  jio = import ./modules/shared/jio;
+  jio-service = import ./modules/shared/jio-service;
   ghostty = import ./modules/shared/ghostty;
   cliproxy = import ./modules/shared/cliproxy;
   mise-workstation = import ./modules/shared/mise-workstation;
   workstation-packages = import ./modules/shared/workstation-packages;
   server-packages = import ./modules/shared/server-packages;
   lab-update-contract = import ./modules/nixos/lab-update-contract;
+  deploy-user = import ./modules/nixos/deploy-user;
   nixos-base = import ./modules/nixos/base;
   ssh-server = import ./modules/nixos/ssh-server;
   tailscale = import ./modules/nixos/tailscale;

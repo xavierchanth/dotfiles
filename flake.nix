@@ -10,6 +10,7 @@
     home-manager = { url = "github:nix-community/home-manager/master"; inputs.nixpkgs.follows = "nixpkgs"; };
     deploy-rs = { url = "github:serokell/deploy-rs"; inputs.nixpkgs.follows = "nixpkgs"; };
     xmt.url = "github:xavierchanth/xmt";
+    jio.url = "github:chanthavong-consulting/jio";
   };
   outputs = inputs: import ./nix { inherit inputs; };
 }

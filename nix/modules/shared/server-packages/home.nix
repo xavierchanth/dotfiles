@@ -5,7 +5,7 @@
 
   # Workstation activation created these links imperatively. Remove only links
   # owned by Home Manager; leave regular files and user data untouched.
-  home.activation.removeWorkstationApplicationLinks = lib.mkIf pkgs.stdenv.isDarwin (lib.hm.dag.entryAfter ["linkGeneration"] ''
+  home.activation.removeWorkstationApplicationLinks = lib.mkIf pkgs.stdenv.hostPlatform.isDarwin (lib.hm.dag.entryAfter ["linkGeneration"] ''
     apps_dir="${config.home.homeDirectory}/Applications"
     hm_apps_dir="$apps_dir/Home Manager Apps"
 

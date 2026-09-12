@@ -26,7 +26,7 @@
     wget
     which
     xz
-  ] ++ lib.optionals pkgs.stdenv.isLinux (with pkgs; [
+  ] ++ lib.optionals pkgs.stdenv.hostPlatform.isLinux (with pkgs; [
     gnumake
     pkg-config
     python3
@@ -36,7 +36,7 @@ in {
   # Mise belongs to every coding workstation. Linux also needs the native
   # linker/compiler and pkg-config for cargo-installed tools; avoid shadowing
   # Darwin's toolchain.
-  home.packages = [ pkgs.mise ] ++ lib.optionals pkgs.stdenv.isLinux [ pkgs.stdenv.cc pkgs.pkg-config ];
+  home.packages = [ pkgs.mise ] ++ lib.optionals pkgs.stdenv.hostPlatform.isLinux [ pkgs.stdenv.cc pkgs.pkg-config ];
   # Stow owns the global config and lockfile, so installation must run after
   # stowDotfiles. Trust only this repository-managed global configuration.
   # Keep activation dependencies and secrets scoped to this subshell.
@@ -45,6 +45,9 @@ in {
       export HOME=${lib.escapeShellArg config.home.homeDirectory}
       export MISE_GLOBAL_CONFIG_FILE="$HOME/.config/mise/config.toml"
       export MISE_YES=1
+      # NixOS defaults to compiling Node; nix-ld in system.nix supports its
+      # upstream binaries and avoids a full V8 build during activation.
+      ${lib.optionalString pkgs.stdenv.hostPlatform.isLinux "export MISE_NODE_COMPILE=false"}
       export PATH=${lib.escapeShellArg (lib.makeBinPath activationPackages)}:"$PATH"
       export SSL_CERT_FILE=${lib.escapeShellArg "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"}
       export NIX_SSL_CERT_FILE="$SSL_CERT_FILE"

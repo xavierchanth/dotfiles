@@ -34,10 +34,10 @@
     difftastic
     jujutsu
   ])
-  ++ lib.optionals pkgs.stdenv.isDarwin (with pkgs; [
+  ++ lib.optionals pkgs.stdenv.hostPlatform.isDarwin (with pkgs; [
     iproute2mac
   ])
-  ++ lib.optionals pkgs.stdenv.isLinux (with pkgs; [
+  ++ lib.optionals pkgs.stdenv.hostPlatform.isLinux (with pkgs; [
     iproute2
     traceroute
   ]);
