@@ -1,6 +1,6 @@
 ---
 name: prompting-guidelines
-description: Author or revise durable instructions for AI agents, including skills, system prompts, and AGENTS.md files. Use when designing agent behavior through reusable instructions, rather than composing ordinary conversational requests.
+description: Use when creating or updating skills, system prompts, AGENTS.md files, or other reusable instructions for AI agents.
 ---
 
 # Prompting Guidelines
@@ -52,6 +52,29 @@ it serves a concrete purpose.
 
 Treat this as a way to clarify decisions, adapting the form and level of
 detail to the instruction.
+
+### Suggestive Prompting
+
+Describe a preferred path and a useful secondary path, with enough context
+for the agent to judge when each fits. Both can be acceptable; make the
+usual approach clear and explain when to suggest an alternative. Use
+language such as “prefer,” “when this would help,” and “start with a
+proposal” to express that balance.
+
+For example, when guiding a designer that works through a parent agent:
+
+> Develop the proposal primarily by reading available context,
+> documentation, and code, researching relevant questions, and discussing
+> findings with the parent. Prefer inline planning. When documentation
+> updates, experiments, or system changes would help establish the design,
+> start with a proposal for the parent to share with the user.
+
+The main path is investigation and inline planning. The secondary path is
+useful additional work, introduced through a proposal when it would help
+establish the design. This guides the transition without turning a
+preference into a blanket prohibition or a separate authorization
+procedure. Keep actual authorization requirements grounded in the task
+and applicable constraints.
 
 ## Preserve Degrees of Freedom
 
