@@ -179,6 +179,22 @@
         "type": "github"
       }
     },
+    "nixpkgs_2": {
+      "locked": {
+        "lastModified": 1789090104,
+        "narHash": "sha256-aYuIOkjWlA2YvXzx9NVgwHtGZqA+J6G7Dt3wbuuGwlg=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "b378e416ccd4a9d27aba331c8f51a7c985dea1a0",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixpkgs-26.05-darwin",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "root": {
       "inputs": {
         "deploy-rs": "deploy-rs",
@@ -188,7 +204,8 @@
         "homebrew-rwx": "homebrew-rwx",
         "nix-darwin": "nix-darwin",
         "nix-homebrew": "nix-homebrew",
-        "nixpkgs": "nixpkgs"
+        "nixpkgs": "nixpkgs",
+        "xmt": "xmt"
       }
     },
     "systems": {
@@ -222,6 +239,38 @@
         "owner": "numtide",
         "repo": "flake-utils",
         "type": "github"
+      }
+    },
+    "xmt": {
+      "inputs": {
+        "nixpkgs": "nixpkgs_2",
+        "xmt-binary": "xmt-binary"
+      },
+      "locked": {
+        "lastModified": 1789228670,
+        "narHash": "sha256-4BZ0/Hf1z8g4BHoyTdBs2e6zTRg8t5HPBj4leQwBaq8=",
+        "owner": "xavierchanth",
+        "repo": "xmt",
+        "rev": "77eafb3971c6f96a8df3c3ffa150ccf87f209bd6",
+        "type": "github"
+      },
+      "original": {
+        "owner": "xavierchanth",
+        "repo": "xmt",
+        "type": "github"
+      }
+    },
+    "xmt-binary": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1789228122,
+        "narHash": "sha256-xlVSVmODsfERpFDmbqdvHzKqO+8wv5xQcZXplS7Afng=",
+        "type": "tarball",
+        "url": "https://github.com/xavierchanth/xmt/releases/download/v1.0.0/XMT-macos.tar.gz"
+      },
+      "original": {
+        "type": "tarball",
+        "url": "https://github.com/xavierchanth/xmt/releases/download/v1.0.0/XMT-macos.tar.gz"
       }
     }
   },
