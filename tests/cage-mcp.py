@@ -147,7 +147,8 @@ class ProtocolTests(unittest.IsolatedAsyncioTestCase):
         with tempfile.TemporaryDirectory() as directory:
             marker = Path(directory) / "closed"
             params = StdioServerParameters(command=sys.executable, args=[str(Path(__file__)), "--serve-fake"],
-                                           env={"CAGE_TEST_CLOSED": str(marker), "PYTHONDONTWRITEBYTECODE": "1"})
+                                           env={"CAGE_TEST_CLOSED": str(marker), "PYTHONDONTWRITEBYTECODE": "1",
+                                                "TEST_ROOT": str(ROOT)})
             async with stdio_client(params) as (reader, writer):
                 async with ClientSession(reader, writer) as client:
                     await client.initialize()
