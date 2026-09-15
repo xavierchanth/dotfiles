@@ -3,46 +3,44 @@ name: dive
 description: Use when the user requests the DIVE method or a DIVE group for coordinated design, implementation, and review.
 ---
 
-Coordinate Design, Implement, Verify, and Explain using the active harness’s available capabilities, adding Critique when selected by the user. Give each delegated role deliberately selected context and a clear outcome. The user-facing coordinator owns user discussion, direction, and final acceptance; progression between stages may be delegated within an explicit brief.
+Coordinate Design, Implement, Verify, and Explain using the available capabilities, adding Critique when selected by the user. Give each delegated role deliberately selected context and a clear outcome. The user-facing coordinator owns user discussion, direction, and final acceptance; progression between stages may be delegated within an explicit brief.
 
 Give each subagent an explicit role and instruct it to read its role resource directly.
 
-## Harness adaptation
+## Execution adaptation
 
 Use subagents when available. If delegation is unavailable, perform the stages sequentially in the current session, read the corresponding role resources, and disclose that verification and any selected critique were not independent. Apply the stage instructions below through the available mechanism.
 
-Prefer a compact task brief over inherited conversation history. Include relevant history when it preserves intent or rationale that a summary would lose. When context isolation is available, start Critique and Verify without inherited conversation history. When it is unavailable, supply a focused review brief and disclose the independence limitation; a fresh role assignment alone does not erase existing context.
+Prefer a compact task brief over inherited conversation history. Include relevant history when it preserves intent or rationale that a summary would lose. When the user requests a fresh or empty-context assignment, disable inherited conversation history and provide only a compact task brief containing the goal, constraints, and required references. When context isolation is available, start Critique and Verify without inherited conversation history. When it is unavailable, supply a focused review brief and disclose the independence limitation; a fresh role assignment alone does not erase existing context.
 
 Use agent continuation, parallel execution, and direct designer elicitation only when supported. Otherwise, transfer the current decisions and evidence in a concise handoff, sequence work, and relay designer questions through the coordinator.
 
-| Stage | Default profile | Output |
+| Stage | Role | Output |
 |---|---|---|
-| Design | `design` | Plan |
-| Critique (when selected) | `critique` | Plan readiness and findings |
-| Implement | `implement` | Code |
-| Verify | `verify` | Review gate |
+| Design | Designer | Plan |
+| Critique (when selected) | Critic | Plan readiness and findings |
+| Implement | Implementer | Code |
+| Verify | Verifier | Review gate |
 | Explain | Coordinating agent | Summary of results |
 
-Read only the resource matching the active harness when listed: [Codex](references/models/codex.md) or [OpenCode](references/models/opencode.md). Keep model identifiers, reasoning settings, and concrete tool controls in these references. Resolve profiles when the harness supports model selection; leave the user-facing coordinator’s model selection to the user through the harness. DIVE profiles apply to delegated coordinator, stage, and supporting roles. Use `coordinator` for delegated coordination.
+## Model selection
 
-## Sizing
+Use the `sol` alias with `low` reasoning for every delegated coordinator, stage, and supporting role. Roles describe responsibilities and context, not model profiles. Select a different model or reasoning level only when the user requests it or the assignment has a concrete need that justifies the override.
 
-Use Normal profiles by default. Small, Normal, and Large size the assignment by its judgment and execution needs; repository size alone does not justify escalation. Prefer low reasoning where it provides sufficient value. The harness references encode the intended model and reasoning balance for each role.
+| DIVE alias | Model ID | Reasoning when omitted |
+|---|---|---|
+| `astra` | `gpt-6-astra` | `low` |
+| `sol` | `gpt-5.6-sol` | `low` |
+| `terra` | `gpt-5.6-terra` | `low` |
+| `luna` | `gpt-5.6-luna` | `low` |
 
-- `design`, `implement`, `critique`, and `verify` serve the corresponding stages. When Design with Critique is selected upfront, use `design-with-critique` for the designer, keeping most drafting and revision with a smaller model and bounded assessment with the critic.
-- `researcher` investigates questions, compares sources, and synthesizes evidence. `explorer` maps relevant code, dependencies, and existing behavior. Use these supporting roles when a bounded investigation helps a stage; they are not mandatory extra steps.
-- `general` handles bounded, general-purpose assignments that do not need a specialized stage or supporting role. Give it a clear brief and expected result.
-- `flash` handles very light, tightly scoped lookups or mechanical tasks at its fixed profile. Keep substantive planning and review with their assigned roles.
+Model selection and reasoning selection are independent. A DIVE alias or model ID without a reasoning level resolves to the reasoning in this table. An explicit reasoning level overrides it for that assignment. State overrides briefly and carry them forward within their selected scope.
 
-Suggest a different size when ambiguity, coupling, or the assignment's scope makes it useful, and use it when the user selects or authorizes it. Tier selection can apply to the whole DIVE group or to selected roles or assignments. A group-wide selection covers all applicable roles without separate approval for each agent; preserve specific role overrides. Repeated cells intentionally keep a role at the same capacity across sizes. A request to bump one tier advances to the next size column, stopping at Large.
-
-State the resolved selections briefly and carry them into subsequent assignments within the selected scope. A large project can use Normal profiles across scoped outcomes, and a complex design can yield straightforward implementation. Honor explicit model and reasoning choices, including higher reasoning on smaller models when supported.
-
-Match full model IDs first, then documented harness aliases. For an unlisted harness or unavailable profile, prefer a user-established equivalent; otherwise use the harness’s configured default and state the fallback. Apply reasoning settings only when supported. If the user explicitly requires an unavailable model or capability, ask how to proceed with the affected stage.
+Match a DIVE alias or exact model identifier from the table. For an unavailable model, prefer a user-established equivalent; otherwise use the configured default and state the fallback. Apply reasoning settings only when supported. If the user explicitly requires an unavailable model or capability, ask how to proceed with the affected stage.
 
 ## Context and usage
 
-Keep investigation, drafting, and implementation with the assigned agents. Use stronger models, when available and selected, for bounded assessments. Request concise findings and decisions from Critique and Verify while preserving the evidence needed for sound judgment. Return plan revisions to Design and implementation corrections to Implement.
+Keep investigation, drafting, and implementation with the assigned agents. Request concise findings and decisions from Critique and Verify while preserving the evidence needed for sound judgment. Return plan revisions to Design and implementation corrections to Implement.
 
 Handoffs should contain the intended behavior, relevant constraints and decisions, acceptance criteria, affected files, and a concise evidence summary. Provide access to source artifacts rather than copying broad code dumps, logs, or conversation transcripts. Preserve enough context for independent assessment and expand reads when evidence warrants it.
 
@@ -60,11 +58,11 @@ Treat stages as responsibilities rather than a fixed arrangement of agents. Pref
 
 Use one implementer for coupled design contributions and multiple implementers for independently executable parts of an agreed design. Make synthesis and integration ownership explicit, resolve conflicting proposals before dependent implementation, and verify combined behavior across affected groups.
 
-The user-facing coordinator may delegate coordination of one or more groups when managing dependencies or coordination load would benefit. Assign the `coordinator` profile and instruct the delegated coordinator to read this SKILL.md as its shared workflow, loading role resources as needed. Give it outcomes, established decisions, dependencies, decision authority, and matters to escalate. Let it progress stages and resolve routine dependencies within that brief. Route unresolved user intent and material changes in direction through the user-facing coordinator. A delegated coordinator may assign its own stage agents or further coordinators when supported and useful for a distinct outcome, carrying the same scope and authority boundaries into their briefs. Return concise results, verification evidence, and escalations to the assigning coordinator; user discussion, direction, and final acceptance remain with the user-facing coordinator. Prefer direct coordination when another layer would mainly relay messages.
+The user-facing coordinator may delegate coordination of one or more groups when managing dependencies or coordination load would benefit. Instruct the delegated coordinator to read this SKILL.md as its shared workflow, loading role resources as needed. Give it outcomes, established decisions, dependencies, decision authority, and matters to escalate. Let it progress stages and resolve routine dependencies within that brief. Route unresolved user intent and material changes in direction through the user-facing coordinator. A delegated coordinator may assign its own stage agents or further coordinators when supported and useful for a distinct outcome, carrying the same scope and authority boundaries into their briefs. Return concise results, verification evidence, and escalations to the assigning coordinator; user discussion, direction, and final acceptance remain with the user-facing coordinator. Prefer direct coordination when another layer would mainly relay messages.
 
 Maintain one current design per group and carry it into implementation and verification. Share dependencies explicitly: transfer the decisions, interfaces, and constraints another group needs, and coordinate ownership where groups affect shared files.
 
-When the harness supports separate user-facing tasks or sessions, suggest them when independent conversations, histories, or lifecycles would help. Create them when the user requests them.
+Suggest separate user-facing tasks or sessions when independent conversations, histories, or lifecycles would help and that capability is available. Create them when the user requests them.
 
 ## Design
 
@@ -84,11 +82,11 @@ Present the plan inline unless the user specifies another destination. Align wit
 
 Prefer Design without a dedicated critic. Add Critique when the user requests it, preserving that choice within its agreed scope.
 
-The parent coordinator should recommend Design with Critique when substantial drafting or repeated design revisions are expected and a smaller model can carry that work while a stronger model contributes bounded assessment. Explain the expected benefit briefly: keeping most plan generation and revision with the smaller model while reserving the stronger model for consequential judgment.
+The parent coordinator should recommend Design with Critique when substantial drafting or repeated design revisions would benefit from independent assessment. Explain the expected benefit briefly: keeping plan generation and revision with the designer while a separate critic tests consequential decisions.
 
 A focused design subtask may also benefit when it requires substantial exploration or drafting around a bounded decision. Scope the recommendation to the work that benefits. Use expected design effort, uncertainty, and the usefulness of independent assessment to guide the recommendation; project size alone is insufficient.
 
-Treat the recommendation as a proposal. Continue with the current arrangement until the user selects it, then carry the selection forward within its agreed scope. When selected upfront, use the Design with Critique profiles. When critique is added to an existing design, preserve useful designer context and established decisions.
+Treat the recommendation as a proposal. Continue with the current arrangement until the user selects it, then carry the selection forward within its agreed scope. When critique is added to an existing design, preserve useful designer context and established decisions.
 
 When selected, Critique is a checkpoint within Design: Design → Critique → Implement → Verify → Explain. Assign a critic with [critique.md](references/critique.md) and isolated context when supported to assess the prepared plan before implementation.
 Supply a compact, self-contained brief: the user's goal, constraints, proposed plan, consequential decisions, unresolved questions, and references to supporting evidence. The critic can inspect relevant source material when needed. Collect plan readiness, required changes, optional improvements, questions requiring user input, and assessment limits.
@@ -99,13 +97,13 @@ Continue with the same critic for materially revised decisions. Minor correction
 
 ## Supporting roles
 
-Give each helper a bounded question, relevant context, and an expected evidence-based result. Use [researcher.md](references/researcher.md) for source investigation and synthesis, and [explorer.md](references/explorer.md) for code and behavior mapping. Return findings to the owning stage so its agent maintains the plan or implementation. A `flash` assignment uses the relevant role instructions with a very light scope.
+Give each helper a bounded question, relevant context, and an expected evidence-based result. Design and Critique may each delegate bounded evidence gathering to supporting researchers or explorers. Helpers return evidence to the owning stage, while the Designer or Critic retains judgment, synthesis, and responsibility for the result. Select each supporting role's model and reasoning independently. Supporting roles do not inherit model or reasoning overrides from the agent that delegates to them unless that inheritance is explicitly requested. Use [researcher.md](references/researcher.md) for source investigation and synthesis, and [explorer.md](references/explorer.md) for code and behavior mapping. Return findings to the owning stage so its agent maintains the plan or implementation.
 
 ## Implement
 
 Start an Implement subagent with [implement.md](references/implement.md) for each independently executable outcome. Give it the agreed plan, relevant context, assigned scope, dependencies, constraints, acceptance criteria, and expected verification.
 
-Run independent outcomes concurrently within the harness’s capacity. Sequence dependent outcomes so each receives the completed prerequisite. Assign coupled changes to one accountable subagent.
+Run independent outcomes concurrently within the available capacity. Sequence dependent outcomes so each receives the completed prerequisite. Assign coupled changes to one accountable subagent.
 
 Use follow-up messages to resolve questions, supply evidence, and correct drift. Continue with the same subagent when its accumulated context remains useful.
 
