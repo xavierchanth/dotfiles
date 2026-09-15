@@ -1,0 +1,6 @@
+interface:
+  display_name: "Team Coordinator"
+  short_description: "Coordinate one named Codex Team"
+  default_prompt: "Use $team-coordinator to coordinate this named Team and return its meaningful results."
+policy:
+  allow_implicit_invocation: false

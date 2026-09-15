@@ -1,0 +1,6 @@
+interface:
+  display_name: "Coordination Core"
+  short_description: "Shared contracts for coordinating delegated work"
+  default_prompt: "Use $coordination-core to coordinate delegated work with compact context and clear returns."
+policy:
+  allow_implicit_invocation: false
