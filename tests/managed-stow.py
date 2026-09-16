@@ -12,6 +12,9 @@ repo = Path(os.environ.get('TEST_ROOT', Path(__file__).parents[1]))
 spec = importlib.util.spec_from_file_location('managed_stow', repo / 'scripts/prepare-managed-stow.py')
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
+iris_spec = importlib.util.spec_from_file_location('iris_routing', repo / 'scripts/prepare-iris-routing.py')
+iris = importlib.util.module_from_spec(iris_spec)
+iris_spec.loader.exec_module(iris)
 
 
 def write(path, text):
@@ -19,9 +22,9 @@ def write(path, text):
     path.write_text(text)
 
 
-def stow(home):
+def stow(home, package='demo', target='.config/demo'):
     subprocess.run(['stow', '--dir', str(home / '.local/share/dotfiles/stow'),
-                    '--target', str(home / '.config/demo'), '--restow', 'demo'], check=True)
+                    '--target', str(home / target), '--restow', package], check=True)
 
 
 with tempfile.TemporaryDirectory() as temporary:
@@ -134,4 +137,57 @@ for owner in ['original', 'managed']:
         module.prepare(home, source, declarations, [])
         stow(home)
         assert not target.is_symlink()
+
+# Iris routing state is migrated before a managed source swap, then linked back
+# into each newly staged generation without changing the private files.
+with tempfile.TemporaryDirectory() as temporary:
+    root = Path(temporary)
+    home = root / 'home'
+    (home / '.dotfiles').mkdir(parents=True)
+    subprocess.run(['git', 'init', '--quiet', home / '.dotfiles'], check=True)
+    declarations = [{'name': 'agents', 'target': '.agents'}]
+    routing = Path('agents/skills/orchestration/iris/config')
+    source_one = root / 'source-one'
+    write(source_one / routing / '.gitignore', 'workspaces.yaml\nvocabulary.yaml\n')
+    module.prepare(home, source_one, declarations, [])
+    (home / '.agents').mkdir(parents=True)
+    stow(home, 'agents', '.agents')
+    config = home / '.agents/skills/orchestration/iris/config'
+    write(config / 'vocabulary.yaml', 'organizations:\n  example: [example]\n')
+
+    iris.prepare(home, link=False)
+    state = home / '.dotfiles/local/iris/vocabulary.yaml'
+    subprocess.run(['git', '-C', home / '.dotfiles', 'check-ignore', '--quiet',
+                    'local/iris/vocabulary.yaml'], check=True)
+    assert state.read_text() == 'organizations:\n  example: [example]\n'
+    assert not (config / 'vocabulary.yaml').exists()
+
+    source_two = root / 'source-two'
+    write(source_two / routing / '.gitignore', 'workspaces.yaml\nvocabulary.yaml\n')
+    write(source_two / 'agents/skills/orchestration/iris/SKILL.md', 'second generation')
+    module.prepare(home, source_two, declarations, [])
+    stow(home, 'agents', '.agents')
+    iris.prepare(home, link=True)
+    routed = config / 'vocabulary.yaml'
+    assert routed.is_symlink(), routed
+    assert routed.resolve() == state, (os.readlink(routed), routed.resolve(), state)
+    assert routed.read_text() == state.read_text()
+    workspaces = config / 'workspaces.yaml'
+    assert workspaces.is_symlink(), workspaces
+    assert workspaces.resolve() == home / '.dotfiles/local/iris/workspaces.yaml'
+    assert state.stat().st_mode & 0o777 == 0o600
+    assert state.parent.stat().st_mode & 0o777 == 0o700
+
+    state.write_text('organizations:\n  durable: [durable]\n')
+    iris.prepare(home, link=False)
+    source_three = root / 'source-three'
+    write(source_three / routing / '.gitignore', 'workspaces.yaml\nvocabulary.yaml\n')
+    write(source_three / 'agents/skills/orchestration/iris/SKILL.md', 'third generation')
+    module.prepare(home, source_three, declarations, [])
+    stow(home, 'agents', '.agents')
+    iris.prepare(home, link=True)
+    assert routed.is_symlink(), routed
+    assert routed.resolve() == state, (os.readlink(routed), routed.resolve(), state)
+    assert routed.read_text() == 'organizations:\n  durable: [durable]\n'
+
 print('managed Stow migration tests passed')

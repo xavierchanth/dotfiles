@@ -1,1 +1,1 @@
-{ name="ai-applications"; platforms=["darwin" "nixos"]; stow=[{name="agents";order=10;target=".agents";prepare=[".agents"];}{name="codex";order=20;target=".codex";prepare=[".codex/rules"];}{name="opencode";order=80;target=".config/opencode";prepare=[".config/opencode"]; }]; }
+{ name="ai-applications"; platforms=["darwin" "nixos"]; home=[./home.nix]; stow=[{name="agents";order=10;target=".agents";prepare=[".agents"];}{name="codex";order=20;target=".codex";prepare=[".codex/rules"];}{name="opencode";order=80;target=".config/opencode";prepare=[".config/opencode"]; }]; }

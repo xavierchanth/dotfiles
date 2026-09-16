@@ -6,7 +6,7 @@ When either file is absent, continue with conversation and live harness evidence
 
 Match saved Projects by canonical primary path. Keep aliases and known transcription variants in `vocabulary.yaml`; keep organization codes and roots, lowercase GitHub owners, workspace and repository names, and canonical primary paths in `workspaces.yaml`. Treat aliases as recognition aids, then use canonical spelling in responses and persisted names. A generic term does not imply a Project or workspace. Keep task IDs, secondary paths, priorities, changing Project display names, and live execution state out of both files.
 
-The committed `config/.gitignore` keeps machine-specific routing data out of version control on every system. Preserve unrelated entries during updates and never silently replace an existing mapping. Detect alias, canonical-key, and path collisions before writing.
+The expected `config/` paths are links into the private, Git-ignored `~/.dotfiles/local/iris/` directory. Home Manager migrates existing routing files there before Stow activation and recreates the links afterward, so managed source replacement does not discard them. Preserve unrelated entries during updates and never silently replace an existing mapping. Detect alias, canonical-key, and path collisions before writing.
 
 When Xavier explicitly establishes an unambiguous durable mapping, persist it without redundant confirmation and report the update naturally. When durability or target is inferred, ambiguous, or collision-prone, propose the mapping or ask one concise question before writing.
 

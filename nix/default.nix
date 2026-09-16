@@ -268,7 +268,7 @@ in builtins.seq checked (builtins.seq deployValidation {
         touch $out
       '';
       managed-stow = pkgs.runCommand "managed-stow-tests" {
-        nativeBuildInputs = [ pkgs.python3 pkgs.stow ];
+        nativeBuildInputs = [ pkgs.git pkgs.python3 pkgs.stow ];
         TEST_ROOT = flakeSource;
         PYTHONDONTWRITEBYTECODE = "1";
       } ''
