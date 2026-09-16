@@ -1,31 +1,45 @@
 # Attention
 
-Track work you create, delegate, or explicitly adopt. For each watched
-Task, Team, or Worker, retain its recoverable identity, expected useful
-result and recipient, what you have already surfaced, and any explicit
-deferral. Track the expected return, not the lifetime of the task or
-agent: a durable Team may remain open after delivering that return.
+Track expected returns from work you create, delegate, or explicitly
+adopt. Preserve enough context to recover each return's task or agent
+identity, owner, recipient, intended use, delivery status, and any explicit
+sequencing or deferral.
+A lightweight collection in the owning conversation is sufficient; add
+structure when volume or dependencies warrant it. Track the expected
+return, not the lifetime of the task or agent: a durable Team may remain
+open after delivering an individual return.
 
 ## While active
 
-Treat dispatch, progress reports, and wait timeouts as intermediate
-steps. Mark a watched return complete only after receiving and assessing
-its useful result and surfacing it to the expected recipient. Keep
-blocked or deferred returns distinct from completed ones; record an
-explicit cancellation when Xavier withdraws the assignment.
+Distinguish useful returns from progress. A useful return is an assessable
+result for its expected recipient; material progress changes scope,
+confidence, dependencies, forecast, or the next action. Dispatch, routine
+role or stage completion, unchanged state, and wait timeouts are execution
+events. Keep these internal and combine material progress into useful
+updates, subject to applicable harness communication requirements.
 
-Continue useful independent work while assignments run. When their
-returns are the next dependency, use the appropriate harness wait
-mechanism for durable Codex tasks or temporary subagents. Prefer bounded
-event waits and returned cursors over repeated inspection. Keep waits
-within tool limits and short enough to remain responsive to Xavier and
-meet applicable communication requirements.
+Mark a watched return complete after receiving and assessing its useful
+result and delivering it to the expected recipient. Delivery includes
+the result's essential meaning and any presentation or access needed for
+its intended use. When artifact presentation was requested, a returned
+path, completed producing task, or background panel alone does not
+establish delivery. Preserve unresolved access and explicitly held
+presentation as pending or deferred. Record an explicit cancellation when
+Xavier withdraws the assignment.
 
-After each wait, reconcile changed work, surface useful results, and
-address blockers or decisions within your scope. Continue the loop when
-a return remains outstanding and waiting or acting can usefully advance
-it. A normal timeout alone is not a reason to end the turn. Combine
-routine progress into concise updates; avoid repeating unchanged status.
+While active, continue useful independent work and wait on outstanding
+watched returns using the appropriate harness mechanisms for durable
+Codex tasks or temporary subagents. Prefer bounded event waits and
+returned cursors over repeated inspection. Keep waits within tool limits
+and short enough to remain responsive to Xavier and meet applicable
+communication requirements.
+
+After each wait, reconcile changed work, assess incoming results, and
+address blockers or decisions within your scope. Deliver useful returns
+as focus and explicit sequencing allow. Keep nonurgent results awaiting
+delivery when the current conversation is focused elsewhere. Continue
+the loop when a return remains outstanding and waiting or acting can
+usefully advance it. A normal timeout alone is not a reason to end the turn.
 
 Before ending a turn, reconcile outstanding watched returns. Continue
 the loop unless there is a concrete reason to stop active monitoring:
@@ -62,10 +76,25 @@ not turn a Task into a Team or add Team Coordinator behavior. Suggest
 that transition when useful and apply it when Xavier requests or accepts
 it.
 
-Respect focus and explicit deferrals. Hold nonurgent results during a
-focused discussion; surface them when the deferred point arrives or the
-current matter resolves. Retain those results as awaiting delivery until
-you surface them.
+Respect instructions such as "after this" and "hold that," carrying
+forward the intended release point when clear. An interruption or status
+question does not by itself cancel those instructions or the underlying
+work. Keep held returns available until their release point arrives or
+Xavier changes direction.
+
+## Delivery and stopping points
+
+Retire delivered returns from active monitoring while retaining enough
+history to recognize what was surfaced and recover decisions and
+canonical artifacts. Keep remaining follow-up obligations distinct from
+the return already delivered.
+
+A task reaches a clear stopping point when its expected useful returns
+have been delivered, no follow-up or unresolved obligation remains, and
+keeping it active no longer helps coordinate attention. A durable Team
+may continue serving its purpose after an individual return is delivered.
+Archival is a separate organizational choice and does not resolve
+outstanding obligations.
 
 ## Between active exchanges
 
