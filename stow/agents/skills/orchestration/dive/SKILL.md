@@ -1,18 +1,18 @@
 ---
 name: dive
-description: Use when Xavier requests DIVE or a DIVE group for coordinated software design, implementation, verification, and explanation.
+description: Coordinate a DIVE Team through software design, implementation, verification, and explanation when Xavier requests or selects DIVE.
 ---
 
 # DIVE
 
-Coordinate one software outcome through Design, optional Critique, Implement, Verify, and Explain. Load `$coordination-core` for context selection, delegation, model selection, handoffs, attention, and evidence. DIVE works standalone in a saved Project or projectless context and does not require a Team.
+Coordinate one DIVE Team through Design, optional Critique, Implement, Verify, and Explain. Its DIVE Coordinator is a specialized Team Coordinator and the primary agent of its top-level Codex task. Ordinary Teams and DIVE Teams are peers. Either may belong to a saved Project or be projectless.
 
-Every DIVE group has the logical Group Coordinator role, separate from the Designer. Distinguish establishing a group from executing one:
+Use the [DIVE Coordinator](../coordination-core/roles/dive-coordinator.md) role, separate from the Designer. Distinguish establishing a Team from executing its workflow:
 
-- When establishing a new group, assign a dedicated Group Coordinator agent the exact role path `~/.agents/skills/orchestration/coordination-core/roles/group-coordinator.md`, this skill, and the group brief.
-- When already assigned the Group Coordinator role, execute the stages directly without creating another Group Coordinator.
+- When Xavier requests a new DIVE Team, establish one top-level Codex task and assign its primary agent the exact role path `~/.agents/skills/orchestration/coordination-core/roles/dive-coordinator.md`, this skill, and the Team brief.
+- When DIVE is selected for the current task, assume the DIVE Coordinator role there. When already assigned that role, execute the stages directly without creating another coordinator tier.
 
-If you cannot delegate a Group Coordinator, explicitly assume that role and run the other stages sequentially. Preserve role boundaries as far as possible. Report that execution is degraded and identify any loss of independent Critique or Verify.
+Load `$team-coordinator` for Team responsibilities and `$coordination-core` for shared coordination guidance. If stage delegation is unavailable, perform the stages sequentially and explain any limitation on independent Critique or Verify.
 
 Use subagents when available. Give every fresh stage agent the exact DIVE role resource path and selected task evidence. Supporting roles do not inherit model or reasoning overrides from the agent that delegates to them unless that inheritance is explicitly requested; select them independently.
 
@@ -24,11 +24,13 @@ Use subagents when available. Give every fresh stage agent the exact DIVE role r
 | Critique, when selected | [critique.md](references/critique.md) | Plan gate and findings |
 | Implement | [implement.md](references/implement.md) | Working change and checks |
 | Verify | [verify.md](references/verify.md) | Review gate and evidence |
-| Explain | Group Coordinator | Consolidated outcome |
+| Explain | DIVE Coordinator | Consolidated outcome |
 
 Use [Researcher](../coordination-core/roles/researcher.md) and [Explorer](../coordination-core/roles/explorer.md) for bounded evidence gathering. Helpers return evidence to the owning stage; that stage retains judgment and responsibility.
 
 Maintain one current design. Scale designers, supporting roles, implementers, Critique, and Verify work to the outcome. Run independent implementation concurrently and sequence dependencies. Route ordinary corrections through Implement and Verify; route approach-changing findings through Design and selected Critique.
+
+Stage and helper returns normally stay within the Team. Surface them when they are the agreed useful return, require Xavier's decision or access, change the approved approach, or materially affect confidence, dependencies, or the next action. DIVE completion requires the agreed terminal gate and a consolidated outcome; a stage agent finishing is an intermediate event.
 
 ## Context and handoffs
 
@@ -40,9 +42,9 @@ Give every handoff the intended behavior, relevant constraints and decisions, ac
 
 ## Design
 
-Start Design with [design.md](references/design.md), the group brief, relevant user context, established decisions and rationale, and the questions to resolve. Continue with the same Designer while its accumulated context remains useful.
+Start Design with [design.md](references/design.md), the Team brief, relevant user context, established decisions and rationale, and the questions to resolve. Continue with the same Designer while its accumulated context remains useful.
 
-Keep Design focused on investigation and an inline proposal. When it recommends documentation updates, experiments, or system changes, present the proposal before implementation. Carry the current design into implementation and verification.
+Keep Design focused on investigation and a reviewable proposal. Prefer inline planning for simple proposals and use the requested presentation form when an artifact would help. When Design recommends documentation updates, experiments, or system changes beyond the assignment, present the proposal before implementation. Carry the current design into implementation and verification.
 
 Keep the assigning coordinator as Xavier's normal conversation partner. Offer a direct conversation with the Designer when focused discovery would help define the goal and the coordinator lacks enough context to mediate. Use that arrangement when Xavier requests or accepts it.
 
@@ -78,12 +80,6 @@ Revisit Design, and Critique within its selected scope, when findings materially
 
 ## Explain
 
-Return the consolidated outcome:
+Return the consolidated outcome: what changed or was proposed, why it matters, the relevant review or verification evidence, remaining limitations, and any decision or follow-up.
 
-- what changed and why;
-- what was reviewed and verified;
-- the review gate and remaining limitations;
-- relevant artifacts and follow-up work; and
-- any decision Xavier or the assigning coordinator needs to make.
-
-Support completion claims with verification evidence. A design-only DIVE concludes with the current plan, selected critique, and unresolved questions.
+Apply the DIVE Coordinator's artifact guidance when selecting evidence for presentation. Support completion claims with the applicable verification. A design-only DIVE Team concludes with the current plan, any selected critique, and unresolved questions.
