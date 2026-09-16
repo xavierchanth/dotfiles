@@ -27,6 +27,19 @@ def stow(home, package='demo', target='.config/demo'):
                     '--target', str(home / target), '--restow', package], check=True)
 
 
+def initialize_checkout(home):
+    (home / '.dotfiles').mkdir(parents=True)
+    subprocess.run(['git', 'init', '--quiet', home / '.dotfiles'], check=True)
+
+
+def assert_refused(callback):
+    try:
+        callback()
+        raise AssertionError('unsafe Iris routing layout accepted')
+    except RuntimeError:
+        pass
+
+
 with tempfile.TemporaryDirectory() as temporary:
     root = Path(temporary)
     home = root / 'home'
@@ -143,8 +156,7 @@ for owner in ['original', 'managed']:
 with tempfile.TemporaryDirectory() as temporary:
     root = Path(temporary)
     home = root / 'home'
-    (home / '.dotfiles').mkdir(parents=True)
-    subprocess.run(['git', 'init', '--quiet', home / '.dotfiles'], check=True)
+    initialize_checkout(home)
     declarations = [{'name': 'agents', 'target': '.agents'}]
     routing = Path('agents/skills/orchestration/iris/config')
     source_one = root / 'source-one'
@@ -179,7 +191,9 @@ with tempfile.TemporaryDirectory() as temporary:
     assert state.parent.stat().st_mode & 0o777 == 0o700
 
     state.write_text('organizations:\n  durable: [durable]\n')
+    state.chmod(0o644)
     iris.prepare(home, link=False)
+    assert state.stat().st_mode & 0o777 == 0o600
     source_three = root / 'source-three'
     write(source_three / routing / '.gitignore', 'workspaces.yaml\nvocabulary.yaml\n')
     write(source_three / 'agents/skills/orchestration/iris/SKILL.md', 'third generation')
@@ -189,5 +203,97 @@ with tempfile.TemporaryDirectory() as temporary:
     assert routed.is_symlink(), routed
     assert routed.resolve() == state, (os.readlink(routed), routed.resolve(), state)
     assert routed.read_text() == 'organizations:\n  durable: [durable]\n'
+
+# Existing target content can make Stow fold only the config directory. That
+# verified Stow-owned link remains safe to traverse while routing files move.
+with tempfile.TemporaryDirectory() as temporary:
+    root = Path(temporary)
+    home = root / 'home'
+    initialize_checkout(home)
+    declarations = [{'name': 'agents', 'target': '.agents'}]
+    routing = Path('agents/skills/orchestration/iris/config')
+    source = root / 'source'
+    write(source / routing / '.gitignore', 'workspaces.yaml\nvocabulary.yaml\n')
+    write(source / routing / 'vocabulary.yaml', 'config link layout\n')
+    module.prepare(home, source, declarations, [])
+    iris_target = home / '.agents/skills/orchestration/iris'
+    write(iris_target / 'user-note', 'preserve')
+    stow(home, 'agents', '.agents')
+    config = iris_target / 'config'
+    assert config.is_symlink()
+
+    iris.prepare(home, link=False)
+    state = home / '.dotfiles/local/iris/vocabulary.yaml'
+    assert state.read_text() == 'config link layout\n'
+    stow(home, 'agents', '.agents')
+    iris.prepare(home, link=True)
+    assert (config / 'vocabulary.yaml').is_symlink()
+    assert (config / 'vocabulary.yaml').resolve() == state
+    assert (iris_target / 'user-note').read_text() == 'preserve'
+
+# A pre-existing real config directory makes Stow link individual files. Only
+# links to the exact selected Stow package path are accepted and migrated.
+with tempfile.TemporaryDirectory() as temporary:
+    root = Path(temporary)
+    home = root / 'home'
+    initialize_checkout(home)
+    declarations = [{'name': 'agents', 'target': '.agents'}]
+    routing = Path('agents/skills/orchestration/iris/config')
+    source = root / 'source'
+    write(source / routing / '.gitignore', 'workspaces.yaml\nvocabulary.yaml\n')
+    write(source / routing / 'vocabulary.yaml', 'individual link layout\n')
+    module.prepare(home, source, declarations, [])
+    config = home / '.agents/skills/orchestration/iris/config'
+    config.mkdir(parents=True)
+    stow(home, 'agents', '.agents')
+    routed = config / 'vocabulary.yaml'
+    assert not config.is_symlink() and routed.is_symlink()
+
+    iris.prepare(home, link=False)
+    state = home / '.dotfiles/local/iris/vocabulary.yaml'
+    assert state.read_text() == 'individual link layout\n'
+    stow(home, 'agents', '.agents')
+    iris.prepare(home, link=True)
+    assert routed.is_symlink() and routed.resolve() == state
+
+# Unrelated directory and file links fail closed without changing their data.
+with tempfile.TemporaryDirectory() as temporary:
+    root = Path(temporary)
+    home = root / 'home'
+    initialize_checkout(home)
+    outside = root / 'outside'
+    write(outside / 'vocabulary.yaml', 'outside directory\n')
+    config = home / '.agents/skills/orchestration/iris/config'
+    config.parent.mkdir(parents=True)
+    config.symlink_to(outside, target_is_directory=True)
+    assert_refused(lambda: iris.prepare(home, link=False))
+    assert config.is_symlink() and (outside / 'vocabulary.yaml').read_text() == 'outside directory\n'
+
+with tempfile.TemporaryDirectory() as temporary:
+    root = Path(temporary)
+    home = root / 'home'
+    initialize_checkout(home)
+    outside = root / 'outside.yaml'
+    write(outside, 'outside file\n')
+    config = home / '.agents/skills/orchestration/iris/config'
+    config.mkdir(parents=True)
+    routed = config / 'vocabulary.yaml'
+    routed.symlink_to(outside)
+    assert_refused(lambda: iris.prepare(home, link=False))
+    assert routed.is_symlink() and outside.read_text() == 'outside file\n'
+
+# Divergent copies stop migration while preserving both versions for recovery.
+with tempfile.TemporaryDirectory() as temporary:
+    root = Path(temporary)
+    home = root / 'home'
+    initialize_checkout(home)
+    config = home / '.agents/skills/orchestration/iris/config'
+    source = config / 'vocabulary.yaml'
+    destination = home / '.dotfiles/local/iris/vocabulary.yaml'
+    write(source, 'current config\n')
+    write(destination, 'existing local state\n')
+    assert_refused(lambda: iris.prepare(home, link=False))
+    assert source.read_text() == 'current config\n'
+    assert destination.read_text() == 'existing local state\n'
 
 print('managed Stow migration tests passed')

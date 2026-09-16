@@ -11,6 +11,7 @@ import tempfile
 
 
 ROUTING_FILES = ('vocabulary.yaml', 'workspaces.yaml')
+ROUTING_CONFIG = Path('skills/orchestration/iris/config')
 
 
 def lexical(path):
@@ -19,6 +20,22 @@ def lexical(path):
 
 def link_destination(path):
     return lexical(path.parent / os.readlink(path))
+
+
+def stow_config_directories(home):
+    return (
+        lexical(home / '.dotfiles/stow/agents' / ROUTING_CONFIG),
+        lexical(home / '.local/share/dotfiles/stow/agents' / ROUTING_CONFIG),
+    )
+
+
+def validate_config_path(config, stow_configs):
+    if config.is_symlink():
+        destination = link_destination(config)
+        if destination not in stow_configs or destination.is_symlink() or not destination.is_dir():
+            raise RuntimeError(f'refusing unrelated Iris config link: {config}')
+    elif config.exists() and not config.is_dir():
+        raise RuntimeError(f'refusing invalid Iris config path: {config}')
 
 
 def ensure_ignored(checkout, git):
@@ -62,14 +79,8 @@ def state_directory(home, git):
     return state
 
 
-def migrate_file(source, destination):
-    if source.is_symlink():
-        if link_destination(source) == destination:
-            return
-        raise RuntimeError(f'refusing unrelated Iris routing link: {source}')
-    if not source.exists():
-        return
-    if not source.is_file():
+def migrate_regular_file(source, destination):
+    if source.is_symlink() or not source.is_file():
         raise RuntimeError(f'refusing non-file Iris routing state: {source}')
     if destination.is_symlink() or (destination.exists() and not destination.is_file()):
         raise RuntimeError(f'refusing invalid Iris state destination: {destination}')
@@ -94,14 +105,34 @@ def migrate_file(source, destination):
             temporary.unlink()
 
 
+def migrate_file(source, destination, stow_configs):
+    if source.is_symlink():
+        linked = link_destination(source)
+        if linked == destination:
+            if destination.exists():
+                if destination.is_symlink() or not destination.is_file():
+                    raise RuntimeError(f'refusing invalid Iris state destination: {destination}')
+                destination.chmod(0o600)
+            return
+        expected = tuple(config / source.name for config in stow_configs)
+        if linked not in expected or linked.is_symlink() or not linked.is_file():
+            raise RuntimeError(f'refusing unrelated Iris routing link: {source}')
+        migrate_regular_file(linked, destination)
+        source.unlink()
+        return
+    if not source.exists():
+        return
+    migrate_regular_file(source, destination)
+
+
 def prepare(home, *, link, git='git'):
     home = lexical(home)
     state = state_directory(home, git)
     config = home / '.agents/skills/orchestration/iris/config'
-    if config.is_symlink() or (config.exists() and not config.is_dir()):
-        raise RuntimeError(f'refusing invalid Iris config path: {config}')
+    stow_configs = stow_config_directories(home)
+    validate_config_path(config, stow_configs)
     for name in ROUTING_FILES:
-        migrate_file(config / name, state / name)
+        migrate_file(config / name, state / name, stow_configs)
     if not link:
         return
     if not config.is_dir():
