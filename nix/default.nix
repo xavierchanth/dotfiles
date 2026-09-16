@@ -33,7 +33,7 @@
     declaration = declarationFor host.kind hostname;
     groupNames = profileGroups ++ (host.groups or []) ++ declaration.groups;
   in builtins.seq _compatible {
-    inherit inputs username hostname inventory jioPackageFor deployment;
+    inherit inputs username hostname inventory jioPackageFor deployment groupNames;
     hostProfile = host // { profileName = host.profile; profile = mapping.legacy; };
     resolvedGroups = resolve { inherit registry; kind = host.kind; groups = groupNames; };
   };
@@ -110,11 +110,13 @@
     charon = inventory.charon;
     deployed = lab.deploymentOrder;
     dedicatedLinux = lib.filter (name: inventory.${name}.kind == "nixos" && (inventory.${name}.deployment.useDedicatedUser or false)) deployed;
+    cageHosts = lib.filter (name: builtins.elem "cage-desktop" (contextFor name).groupNames) (builtins.attrNames nixosHosts);
   in assert charon.kind == "openwrt" && charon.profile == "openwrt-router" && !(charon ? system);
      assert openwrtProfiles ? ${charon.profile};
      assert openwrtProfiles.${charon.profile}.managesPrivateDns && openwrtProfiles.${charon.profile}.attendedOnly;
      assert lib.all (name: inventory.${name}.lab.deploy or false) deployed;
      assert dedicatedLinux == [] || deployment.authorizedKeys != [];
+     assert cageHosts == [ "poseidon" "zeus" ];
      true;
   darwinServerValidation = let
     eris = (mkDarwin "eris").config;

@@ -1,6 +1,6 @@
 # Cage sessions
 
-Hades, Poseidon, and Zeus select the `cage-desktop` group. It supplies on-demand
+Poseidon and Zeus select the `cage-desktop` group. It supplies on-demand
 headless Cage sessions, WayVNC, screenshots (`grim`), keyboard input (`wtype`),
 and mouse input (`vncdo`). The `cage-session` skill is installed into the managed
 user's `.codex/skills` only on hosts selecting this group.
