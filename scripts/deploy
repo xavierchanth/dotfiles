@@ -6,37 +6,69 @@ deploy_github_token_override=${DEPLOY_GITHUB_TOKEN-}
 unset DEPLOY_GITHUB_TOKEN
 usage() {
   cat <<'EOF'
-usage: deploy [--dry-activate|--test|--boot] <HOST|lab>
+usage: deploy [--dry-activate|--test|--boot] <HOST|lab|linux>
        deploy probe HOST
        deploy --assure hades
 
 Switch is the default. Lab deployment is sequential and fail-fast.
+linux selects only NixOS lab hosts, preserving inventory order.
 Darwin targets refuse --test and --boot; lab refuses either mode before contacting any host.
-`--assure hades` is the attended, jj-checkout-only lab-update path.
+`--assure hades` requires a jj checkout and a host without deploy credentials.
 `probe HOST` confirms before testing remote-build transfer/build prerequisites; it never activates.
 EOF
 }
 die() { echo "deploy: $*" >&2; exit 64; }
 [[ -r ${DEPLOY_INVENTORY:?} ]] || die 'packaged inventory is unavailable'
 declare -a DEPLOY_NAMES=() STAGED=()
-declare -A KIND=() SYSTEM=() CREDENTIALS=()
-while IFS=$'\t' read -r name kind system credentials extra; do
+declare -A KIND=() SYSTEM=() CREDENTIALS=() TARGET=() JUMP=() SSH_USER=() IDENTITY=()
+declare -a SSH_OPTIONS=()
+while IFS=$'\t' read -r name kind system credentials target jump ssh_user identity extra; do
   [[ $name =~ ^[a-z][a-z0-9-]*$ && $kind =~ ^(nixos|darwin)$ && $system =~ ^[a-z0-9_+-]+$ && ! $extra ]] || die 'invalid packaged inventory'
   [[ -z ${KIND[$name]+x} ]] || die 'duplicate packaged inventory node'
   [[ $credentials == - || $credentials == github-api ]] || die 'invalid packaged credential capability'
+  [[ $target == - || $target =~ ^[a-zA-Z0-9][a-zA-Z0-9.-]*$ ]] || die 'invalid packaged target address'
+  [[ $jump == - || $jump =~ ^[a-zA-Z0-9][a-zA-Z0-9.-]*$ ]] || die 'invalid packaged proxy jump'
+  [[ $ssh_user =~ ^[a-z_][a-z0-9_-]*$ ]] || die 'invalid packaged SSH user'
+  [[ $identity == - || $identity =~ ^\.ssh/[a-zA-Z0-9._-]+$ ]] || die 'invalid packaged identity file'
+  [[ $ssh_user == chant && $identity == - || $ssh_user == deploy && $identity != - ]] || die 'invalid packaged SSH identity selection'
   DEPLOY_NAMES+=("$name"); KIND[$name]=$kind; SYSTEM[$name]=$system; CREDENTIALS[$name]=$credentials
+  [[ $target != - ]] || target=$name
+  TARGET[$name]=$target; JUMP[$name]=$jump; SSH_USER[$name]=$ssh_user; IDENTITY[$name]=$identity
 done <"$DEPLOY_INVENTORY"
 is_node() { [[ -v KIND[$1] ]]; }
+base_ssh_options() {
+  SSH_OPTIONS=(-o BatchMode=yes -o ControlMaster=no -o ControlPath=none -o ServerAliveInterval=5 -o ServerAliveCountMax=3 -o ConnectTimeout=10)
+  [[ ${JUMP[$1]} == - ]] || SSH_OPTIONS+=(-o "ProxyJump=${JUMP[$1]}")
+}
+activation_ssh_options() {
+  base_ssh_options "$1"
+  [[ ${IDENTITY[$1]} == - ]] || SSH_OPTIONS+=(-o IdentitiesOnly=yes -i "$HOME/${IDENTITY[$1]}")
+}
+credential_ssh() {
+  local host=$1; shift
+  base_ssh_options "$host"
+  # Callers supply complete remote command strings with intentional quoting.
+  # shellcheck disable=SC2029
+  ssh "${SSH_OPTIONS[@]}" "chant@${TARGET[$host]}" "$@"
+}
+activation_ssh() {
+  local host=$1; shift
+  activation_ssh_options "$host"
+  # shellcheck disable=SC2029
+  ssh "${SSH_OPTIONS[@]}" "${SSH_USER[$host]}@${TARGET[$host]}" "$@"
+}
 local_name=$(uname -n); local_name=${local_name%%.*}; local_name=${local_name,,}
 mode=switch
 github_token=
 dry_warned=0
+# The target may still have only Apple's BSD stat during its first deployment.
+# shellcheck disable=SC2016
+CLEANUP_COMMAND='for d in "/run/dotfiles-deploy/$(id -un)" "${XDG_STATE_HOME:-$HOME/.local/state}/dotfiles-deploy"; do [ ! -L "$d" ] && [ -d "$d" ] && [ "$(stat -c %u "$d" 2>/dev/null || stat -f %u "$d" 2>/dev/null)" = "$(id -u)" ] && rm -f -- "$d/github-api"; done; :'
 cleanup() {
   local status=$? host
   trap - EXIT INT TERM
   for host in "${STAGED[@]}"; do
-    ssh -o BatchMode=yes -o ControlMaster=no -o ControlPath=none -o ConnectTimeout=10 "chant@$host" \
-      'for d in "/run/dotfiles-deploy/$(id -un)" "${XDG_STATE_HOME:-$HOME/.local/state}/dotfiles-deploy"; do [ ! -L "$d" ] && [ -d "$d" ] && [ "$(stat -c %u "$d" 2>/dev/null)" = "$(id -u)" ] && rm -f -- "$d/github-api"; done' </dev/null >/dev/null 2>&1 || :
+    credential_ssh "$host" "$CLEANUP_COMMAND" </dev/null >/dev/null 2>&1 || :
   done
   unset github_token
   exit "$status"
@@ -47,16 +79,19 @@ trap 'exit 143' TERM
 read -r -d '' STAGE_COMMAND <<'REMOTE' || :
 set -Eeuo pipefail
 umask 077
+file_stat() { stat -c "$1" "$3" 2>/dev/null || stat -f "$2" "$3"; }
 uid=$(id -u); run=/run/dotfiles-deploy/$(id -un); state=${XDG_STATE_HOME:-$HOME/.local/state}/dotfiles-deploy
-if [ ! -L "$run" ] && [ -d "$run" ] && [ "$(stat -c %u "$run")" = "$uid" ] && [ "$(stat -c %a "$run")" = 700 ]; then d=$run
-else mkdir -p -- "$state"; [ ! -L "$state" ] && [ "$(stat -c %u "$state")" = "$uid" ] && chmod 700 "$state"; d=$state; fi
-[ ! -L "$d" ] && [ "$(stat -c %u "$d")" = "$uid" ] && [ "$(stat -c %a "$d")" = 700 ] || exit 1
+if [ ! -L "$run" ] && [ -d "$run" ] && [ "$(file_stat %u %u "$run")" = "$uid" ] && [ "$(file_stat %a %Lp "$run")" = 700 ]; then d=$run
+else mkdir -p -- "$state"; [ ! -L "$state" ] && [ "$(file_stat %u %u "$state")" = "$uid" ] && chmod 700 "$state"; d=$state; fi
+[ ! -L "$d" ] && [ "$(file_stat %u %u "$d")" = "$uid" ] && [ "$(file_stat %a %Lp "$d")" = 700 ] || exit 1
 lock=$d/.stage-lock; i=0
 until mkdir "$lock" 2>/dev/null; do i=$((i+1)); [ $i -lt 50 ] || exit 1; sleep .1; done
 tmp=; trap 'rm -rf "$lock"; [ -z "$tmp" ] || rm -f "$tmp"' EXIT
 tmp=$(mktemp "$d/.github-api.XXXXXX"); cat >"$tmp"; chmod 600 "$tmp"
-[ "$(stat -c %s "$tmp")" -ge 20 ] && [ "$(stat -c %s "$tmp")" -le 513 ] || exit 1
-mv -fT -- "$tmp" "$d/github-api"; tmp=
+[ "$(file_stat %s %z "$tmp")" -ge 20 ] && [ "$(file_stat %s %z "$tmp")" -le 513 ] || exit 1
+destination=$d/github-api
+[ ! -L "$destination" ] && { [ ! -e "$destination" ] || [ -f "$destination" ]; } || exit 1
+mv -f -- "$tmp" "$destination"; tmp=
 REMOTE
 needs_credential() { [[ ${CREDENTIALS[$1]} == github-api ]]; }
 valid_token() { [[ ${#1} -ge 20 && ${#1} -le 512 && $1 != *[$'\t\r\n ']* && $1 =~ ^[A-Za-z0-9_][A-Za-z0-9_.-]+$ ]]; }
@@ -69,8 +104,7 @@ acquire() {
 }
 unstage() {
   local host=$1 kept=() item
-  if ssh -o BatchMode=yes -o ControlMaster=no -o ControlPath=none -o ConnectTimeout=10 "chant@$host" \
-    'for d in "/run/dotfiles-deploy/$(id -un)" "${XDG_STATE_HOME:-$HOME/.local/state}/dotfiles-deploy"; do [ ! -L "$d" ] && [ -d "$d" ] && [ "$(stat -c %u "$d" 2>/dev/null)" = "$(id -u)" ] && rm -f -- "$d/github-api"; done' </dev/null >/dev/null 2>&1; then
+  if credential_ssh "$host" "$CLEANUP_COMMAND" </dev/null >/dev/null 2>&1; then
     for item in "${STAGED[@]}"; do [[ $item == "$host" ]] || kept+=("$item"); done
     STAGED=("${kept[@]}")
   fi
@@ -84,7 +118,7 @@ stage() {
   # shellcheck disable=SC2016
   launcher='decoded=$(printf %s "$1" | base64 -d) || exit; exec bash -c "$decoded"'
   printf -v remote_command 'bash -c %q _ %q' "$launcher" "$encoded"
-  printf '%s\n' "$github_token" | ssh -o BatchMode=yes -o ControlMaster=no -o ControlPath=none -o ServerAliveInterval=5 -o ServerAliveCountMax=3 -o ConnectTimeout=10 "chant@$host" "$remote_command" || die "failed to stage GitHub credential for $host"
+  printf '%s\n' "$github_token" | credential_ssh "$host" "$remote_command" || die "failed to stage GitHub credential for $host"
 }
 case ${1:-} in
   --dry-activate) mode=dry-activate; shift;;
@@ -105,9 +139,12 @@ routine() {
   fi
   # Authentication preflight precedes evaluation, but staging follows it.
   nix eval --json --no-write-lock-file "$DEPLOY_FLAKE#deploy.nodes.$host" >/dev/null
+  if [[ ${KIND[$host]} == nixos && $mode != dry-activate ]]; then
+    activation_ssh "$host" 'bash -s -- chant' <"${DEPLOY_PREFLIGHT:?}" || die "activation preflight failed for $host; no new deployment was started"
+  fi
   if [[ $mode == switch || $mode == test ]]; then needs_credential "$host" && stage "$host"; fi
   [[ $mode == switch ]] || flag=("--$mode")
-  if "$DEPLOY_RS" "${flag[@]}" --skip-checks --remote-build "$DEPLOY_FLAKE#$host"; then
+  if "$DEPLOY_SUPERVISOR" "$DEPLOY_RS" "${flag[@]}" --skip-checks --remote-build "$DEPLOY_FLAKE#$host"; then
     if [[ $mode == switch || $mode == test ]] && needs_credential "$host"; then unstage "$host"; fi
   else
     status=$?; if [[ $mode == switch || $mode == test ]] && needs_credential "$host"; then unstage "$host"; fi; return "$status"
@@ -116,12 +153,21 @@ routine() {
 [[ $# -gt 0 ]] || { usage; exit 64; }
 case $1 in
   -h|--help) [[ $# == 1 ]] || die 'help takes no arguments'; usage;;
-  lab)
-    [[ $# == 1 ]] || die 'lab takes no additional arguments'
-    [[ $mode != test && $mode != boot ]] || die "refusing --$mode for lab before deployment: the fleet contains Darwin targets whose system profile would be repointed without activation; use switch or --dry-activate"
-    for host in "${DEPLOY_NAMES[@]}"; do [[ $local_name != "$host" ]] || die "refusing whole-lab rollout from member $host; use a non-lab Nix client"; done
-    if [[ $mode == switch ]]; then for host in "${DEPLOY_NAMES[@]}"; do needs_credential "$host" && { acquire; break; }; done; fi
-    for host in "${DEPLOY_NAMES[@]}"; do routine "$host"; done;;
+  lab|linux)
+    group=$1
+    [[ $# == 1 ]] || die "$group takes no additional arguments"
+    selected=()
+    for host in "${DEPLOY_NAMES[@]}"; do
+      [[ $group != linux || ${KIND[$host]} == nixos ]] || continue
+      selected+=("$host")
+    done
+    (( ${#selected[@]} > 0 )) || die "no hosts selected for $group"
+    for host in "${selected[@]}"; do
+      [[ ${KIND[$host]} != darwin || ($mode != test && $mode != boot) ]] || die "refusing --$mode for $group before deployment: the fleet contains Darwin targets whose system profile would be repointed without activation; use switch or --dry-activate"
+      [[ $local_name != "$host" ]] || die "refusing $group rollout from selected member $host; use another Nix client"
+    done
+    if [[ $mode == switch || $mode == test ]]; then for host in "${selected[@]}"; do needs_credential "$host" && { acquire; break; }; done; fi
+    for host in "${selected[@]}"; do routine "$host"; done;;
   --assure)
     [[ $mode == switch && $# == 2 ]] || die 'usage: deploy --assure hades'
     [[ $2 == hades && ${KIND[$2]-} == nixos ]] || die 'the assured path supports only the NixOS host hades'
@@ -134,14 +180,16 @@ case $1 in
     is_node "$2" || die "unknown deploy node: $2"
     [[ $local_name != "$2" ]] || die 'refusing to probe the current host through SSH'
     if [[ -v DEPLOY_TTY_PATH ]]; then tty_path=$DEPLOY_TTY_PATH; else [[ -t 0 ]] || die 'probe requires an interactive terminal and explicit confirmation'; tty_path=/dev/stdin; fi
-    read -r -p "Test remote-build derivation transfer/build prerequisites at chant@$2 (network/SSH, no activation)? Type probe $2: " answer <"$tty_path"
+    read -r -p "Test remote-build derivation transfer/build prerequisites at ${SSH_USER[$2]}@$2 (network/SSH, no activation)? Type probe $2: " answer <"$tty_path"
     [[ $answer == "probe $2" ]] || die 'not confirmed'
     probe_root=$(mktemp -d); trap 'rm -rf "$probe_root"' EXIT
     # $out is intentionally expanded by the Nix derivation builder, not this shell.
     # shellcheck disable=SC2016
     drv_root=$(DEPLOY_PROBE_SYSTEM=${SYSTEM[$2]} nix-instantiate --impure --add-root "$probe_root/probe.drv" --expr 'derivation { name="deploy-remote-build-probe"; system=builtins.getEnv "DEPLOY_PROBE_SYSTEM"; builder="/bin/sh"; args=["-c" "echo probe > $out"]; }')
     drv=$(readlink "$drv_root"); [[ $drv == /nix/store/*.drv ]] || die 'probe derivation root is invalid'
-    store="ssh-ng://chant@$2"
+    activation_ssh_options "$2"
+    export NIX_SSHOPTS="${SSH_OPTIONS[*]}"
+    store="ssh-ng://${SSH_USER[$2]}@${TARGET[$2]}"
     nix copy --to "$store" "$drv"
     out=$(nix-store --store "$store" --no-gc-warning --realise "$drv")
     [[ $out ]] || die 'remote build returned no output path'

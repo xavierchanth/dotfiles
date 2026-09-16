@@ -8,7 +8,7 @@ require("slimline").setup({
   },
   components = {
     left = { "mode", "path" },
-    right = { "diagnostics", "filetype_lsp", "progress" },
+    right = { "diagnostics", "progress" },
   },
   configs = {
     modes = {

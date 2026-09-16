@@ -59,65 +59,6 @@ checksum = "sha256:e77d0ea1226b8b389b43f702240091249a96eea25857281f90ea24d0eb9eb
 url = "https://github.com/JohnnyMorganz/StyLua/releases/download/v2.5.2/stylua-windows-x86_64.zip"
 url_api = "https://api.github.com/repos/JohnnyMorganz/StyLua/releases/assets/421902292"
 
-[[tools."aqua:LuaLS/lua-language-server"]]
-version = "3.19.0"
-backend = "aqua:LuaLS/lua-language-server"
-
-[tools."aqua:LuaLS/lua-language-server"."platforms.linux-arm64"]
-checksum = "sha256:f625d3955c8cb2962b65f26970fa7caa502ed6ed448686aa0ffaa23a59ebd454"
-url = "https://github.com/LuaLS/lua-language-server/releases/download/3.19.0/lua-language-server-3.19.0-linux-arm64.tar.gz"
-url_api = "https://api.github.com/repos/LuaLS/lua-language-server/releases/assets/505549603"
-
-[tools."aqua:LuaLS/lua-language-server"."platforms.linux-arm64-musl"]
-checksum = "sha256:f625d3955c8cb2962b65f26970fa7caa502ed6ed448686aa0ffaa23a59ebd454"
-url = "https://github.com/LuaLS/lua-language-server/releases/download/3.19.0/lua-language-server-3.19.0-linux-arm64.tar.gz"
-url_api = "https://api.github.com/repos/LuaLS/lua-language-server/releases/assets/505549603"
-
-[tools."aqua:LuaLS/lua-language-server"."platforms.linux-x64"]
-checksum = "sha256:624ae8dd3bfbd5c2ee3ccf2f3547d33aeefa209971cce8c11d48f69fc1ec065a"
-url = "https://github.com/LuaLS/lua-language-server/releases/download/3.19.0/lua-language-server-3.19.0-linux-x64.tar.gz"
-url_api = "https://api.github.com/repos/LuaLS/lua-language-server/releases/assets/505550982"
-
-[tools."aqua:LuaLS/lua-language-server"."platforms.linux-x64-baseline"]
-checksum = "sha256:624ae8dd3bfbd5c2ee3ccf2f3547d33aeefa209971cce8c11d48f69fc1ec065a"
-url = "https://github.com/LuaLS/lua-language-server/releases/download/3.19.0/lua-language-server-3.19.0-linux-x64.tar.gz"
-url_api = "https://api.github.com/repos/LuaLS/lua-language-server/releases/assets/505550982"
-
-[tools."aqua:LuaLS/lua-language-server"."platforms.linux-x64-musl"]
-checksum = "sha256:624ae8dd3bfbd5c2ee3ccf2f3547d33aeefa209971cce8c11d48f69fc1ec065a"
-url = "https://github.com/LuaLS/lua-language-server/releases/download/3.19.0/lua-language-server-3.19.0-linux-x64.tar.gz"
-url_api = "https://api.github.com/repos/LuaLS/lua-language-server/releases/assets/505550982"
-
-[tools."aqua:LuaLS/lua-language-server"."platforms.linux-x64-musl-baseline"]
-checksum = "sha256:624ae8dd3bfbd5c2ee3ccf2f3547d33aeefa209971cce8c11d48f69fc1ec065a"
-url = "https://github.com/LuaLS/lua-language-server/releases/download/3.19.0/lua-language-server-3.19.0-linux-x64.tar.gz"
-url_api = "https://api.github.com/repos/LuaLS/lua-language-server/releases/assets/505550982"
-
-[tools."aqua:LuaLS/lua-language-server"."platforms.macos-arm64"]
-checksum = "sha256:c952adb8521d316ecbfe3b6add88e7cc03a4b5d74143911cbb61b30bbeafd7bb"
-url = "https://github.com/LuaLS/lua-language-server/releases/download/3.19.0/lua-language-server-3.19.0-darwin-arm64.tar.gz"
-url_api = "https://api.github.com/repos/LuaLS/lua-language-server/releases/assets/505549330"
-
-[tools."aqua:LuaLS/lua-language-server"."platforms.macos-x64"]
-checksum = "sha256:0b7b75409994f8071304311fecf596b4529722bcc5e5287204e272f80d8e0101"
-url = "https://github.com/LuaLS/lua-language-server/releases/download/3.19.0/lua-language-server-3.19.0-darwin-x64.tar.gz"
-url_api = "https://api.github.com/repos/LuaLS/lua-language-server/releases/assets/505548839"
-
-[tools."aqua:LuaLS/lua-language-server"."platforms.macos-x64-baseline"]
-checksum = "sha256:0b7b75409994f8071304311fecf596b4529722bcc5e5287204e272f80d8e0101"
-url = "https://github.com/LuaLS/lua-language-server/releases/download/3.19.0/lua-language-server-3.19.0-darwin-x64.tar.gz"
-url_api = "https://api.github.com/repos/LuaLS/lua-language-server/releases/assets/505548839"
-
-[tools."aqua:LuaLS/lua-language-server"."platforms.windows-x64"]
-checksum = "sha256:cc100f23cc33d5ef90c6be9853934edaaf82f0f9c6a64b2a03fb8936d8cfc567"
-url = "https://github.com/LuaLS/lua-language-server/releases/download/3.19.0/lua-language-server-3.19.0-win32-x64.zip"
-url_api = "https://api.github.com/repos/LuaLS/lua-language-server/releases/assets/505550527"
-
-[tools."aqua:LuaLS/lua-language-server"."platforms.windows-x64-baseline"]
-checksum = "sha256:cc100f23cc33d5ef90c6be9853934edaaf82f0f9c6a64b2a03fb8936d8cfc567"
-url = "https://github.com/LuaLS/lua-language-server/releases/download/3.19.0/lua-language-server-3.19.0-win32-x64.zip"
-url_api = "https://api.github.com/repos/LuaLS/lua-language-server/releases/assets/505550527"
-
 [[tools."aqua:Myriad-Dreamin/tinymist"]]
 version = "0.15.2"
 backend = "aqua:Myriad-Dreamin/tinymist"
@@ -407,65 +348,6 @@ url_api = "https://api.github.com/repos/cue-lang/cue/releases/assets/479014351"
 checksum = "sha256:9f15378dc52b9a1bb6fa1755adc0410c9f17f330a621b784a5b31fdbc91c6d7a"
 url = "https://github.com/cue-lang/cue/releases/download/v0.17.1/cue_v0.17.1_windows_amd64.zip"
 url_api = "https://api.github.com/repos/cue-lang/cue/releases/assets/479014351"
-
-[[tools."aqua:earendil-works/pi"]]
-version = "0.84.1"
-backend = "aqua:earendil-works/pi"
-
-[tools."aqua:earendil-works/pi"."platforms.linux-arm64"]
-checksum = "sha256:ab95c058a4651b5ff5d8c878e524edfb776263c7a444f325505f247c056eecfc"
-url = "https://github.com/earendil-works/pi/releases/download/v0.84.1/pi-linux-arm64.tar.gz"
-url_api = "https://api.github.com/repos/earendil-works/pi/releases/assets/504727596"
-
-[tools."aqua:earendil-works/pi"."platforms.linux-arm64-musl"]
-checksum = "sha256:ab95c058a4651b5ff5d8c878e524edfb776263c7a444f325505f247c056eecfc"
-url = "https://github.com/earendil-works/pi/releases/download/v0.84.1/pi-linux-arm64.tar.gz"
-url_api = "https://api.github.com/repos/earendil-works/pi/releases/assets/504727596"
-
-[tools."aqua:earendil-works/pi"."platforms.linux-x64"]
-checksum = "sha256:5634d7ebd18274b63af3371e942f342d74bea012389575c1d1ff15ce6ca80c2f"
-url = "https://github.com/earendil-works/pi/releases/download/v0.84.1/pi-linux-x64.tar.gz"
-url_api = "https://api.github.com/repos/earendil-works/pi/releases/assets/504727598"
-
-[tools."aqua:earendil-works/pi"."platforms.linux-x64-baseline"]
-checksum = "sha256:5634d7ebd18274b63af3371e942f342d74bea012389575c1d1ff15ce6ca80c2f"
-url = "https://github.com/earendil-works/pi/releases/download/v0.84.1/pi-linux-x64.tar.gz"
-url_api = "https://api.github.com/repos/earendil-works/pi/releases/assets/504727598"
-
-[tools."aqua:earendil-works/pi"."platforms.linux-x64-musl"]
-checksum = "sha256:5634d7ebd18274b63af3371e942f342d74bea012389575c1d1ff15ce6ca80c2f"
-url = "https://github.com/earendil-works/pi/releases/download/v0.84.1/pi-linux-x64.tar.gz"
-url_api = "https://api.github.com/repos/earendil-works/pi/releases/assets/504727598"
-
-[tools."aqua:earendil-works/pi"."platforms.linux-x64-musl-baseline"]
-checksum = "sha256:5634d7ebd18274b63af3371e942f342d74bea012389575c1d1ff15ce6ca80c2f"
-url = "https://github.com/earendil-works/pi/releases/download/v0.84.1/pi-linux-x64.tar.gz"
-url_api = "https://api.github.com/repos/earendil-works/pi/releases/assets/504727598"
-
-[tools."aqua:earendil-works/pi"."platforms.macos-arm64"]
-checksum = "sha256:683c84261f40b870b4a7ccf181a48ad6ecd71853b0112d1bb617539530c6121d"
-url = "https://github.com/earendil-works/pi/releases/download/v0.84.1/pi-darwin-arm64.tar.gz"
-url_api = "https://api.github.com/repos/earendil-works/pi/releases/assets/504727600"
-
-[tools."aqua:earendil-works/pi"."platforms.macos-x64"]
-checksum = "sha256:f9060962b9cca5438d7fb97b60adae9c9302503d39b68d8aea8b891e2eb3e786"
-url = "https://github.com/earendil-works/pi/releases/download/v0.84.1/pi-darwin-x64.tar.gz"
-url_api = "https://api.github.com/repos/earendil-works/pi/releases/assets/504727599"
-
-[tools."aqua:earendil-works/pi"."platforms.macos-x64-baseline"]
-checksum = "sha256:f9060962b9cca5438d7fb97b60adae9c9302503d39b68d8aea8b891e2eb3e786"
-url = "https://github.com/earendil-works/pi/releases/download/v0.84.1/pi-darwin-x64.tar.gz"
-url_api = "https://api.github.com/repos/earendil-works/pi/releases/assets/504727599"
-
-[tools."aqua:earendil-works/pi"."platforms.windows-x64"]
-checksum = "sha256:20dd3a07cfe0bdc6919dfbc479c694798ec5ea88a9c60f6e12678cecae1e5dfa"
-url = "https://github.com/earendil-works/pi/releases/download/v0.84.1/pi-windows-x64.zip"
-url_api = "https://api.github.com/repos/earendil-works/pi/releases/assets/504727619"
-
-[tools."aqua:earendil-works/pi"."platforms.windows-x64-baseline"]
-checksum = "sha256:20dd3a07cfe0bdc6919dfbc479c694798ec5ea88a9c60f6e12678cecae1e5dfa"
-url = "https://github.com/earendil-works/pi/releases/download/v0.84.1/pi-windows-x64.zip"
-url_api = "https://api.github.com/repos/earendil-works/pi/releases/assets/504727619"
 
 [[tools."aqua:hadolint/hadolint"]]
 version = "2.15.1"
@@ -949,54 +831,6 @@ checksum = "sha256:19ce3551153c2fe7ee9fa2f95208310c8f4d3209fedb699e0333faf8913f6
 url = "https://github.com/typst/typst/releases/download/v0.15.1/typst-x86_64-pc-windows-msvc.zip"
 url_api = "https://api.github.com/repos/typst/typst/releases/assets/480303335"
 
-[[tools."aqua:zigtools/zls"]]
-version = "0.16.0"
-backend = "aqua:zigtools/zls"
-
-[tools."aqua:zigtools/zls"."platforms.linux-arm64"]
-url = "https://builds.zigtools.org/zls-aarch64-linux-0.16.0.tar.xz"
-provenance = "minisign"
-
-[tools."aqua:zigtools/zls"."platforms.linux-arm64-musl"]
-url = "https://builds.zigtools.org/zls-aarch64-linux-0.16.0.tar.xz"
-provenance = "minisign"
-
-[tools."aqua:zigtools/zls"."platforms.linux-x64"]
-url = "https://builds.zigtools.org/zls-x86_64-linux-0.16.0.tar.xz"
-provenance = "minisign"
-
-[tools."aqua:zigtools/zls"."platforms.linux-x64-baseline"]
-url = "https://builds.zigtools.org/zls-x86_64-linux-0.16.0.tar.xz"
-provenance = "minisign"
-
-[tools."aqua:zigtools/zls"."platforms.linux-x64-musl"]
-url = "https://builds.zigtools.org/zls-x86_64-linux-0.16.0.tar.xz"
-provenance = "minisign"
-
-[tools."aqua:zigtools/zls"."platforms.linux-x64-musl-baseline"]
-url = "https://builds.zigtools.org/zls-x86_64-linux-0.16.0.tar.xz"
-provenance = "minisign"
-
-[tools."aqua:zigtools/zls"."platforms.macos-arm64"]
-url = "https://builds.zigtools.org/zls-aarch64-macos-0.16.0.tar.xz"
-provenance = "minisign"
-
-[tools."aqua:zigtools/zls"."platforms.macos-x64"]
-url = "https://builds.zigtools.org/zls-x86_64-macos-0.16.0.tar.xz"
-provenance = "minisign"
-
-[tools."aqua:zigtools/zls"."platforms.macos-x64-baseline"]
-url = "https://builds.zigtools.org/zls-x86_64-macos-0.16.0.tar.xz"
-provenance = "minisign"
-
-[tools."aqua:zigtools/zls"."platforms.windows-x64"]
-url = "https://builds.zigtools.org/zls-x86_64-windows-0.16.0.zip"
-provenance = "minisign"
-
-[tools."aqua:zigtools/zls"."platforms.windows-x64-baseline"]
-url = "https://builds.zigtools.org/zls-x86_64-windows-0.16.0.zip"
-provenance = "minisign"
-
 [[tools.bun]]
 version = "1.3.14"
 backend = "core:bun"
@@ -1109,10 +943,6 @@ url = "https://dl.google.com/go/go1.26.5.windows-amd64.zip"
 checksum = "sha256:97e6b2a833b6d89f9ff17d25419ac0a7e3b482a044e9ab18cdef834bd834fd38"
 url = "https://dl.google.com/go/go1.26.5.windows-amd64.zip"
 
-[[tools."go:golang.org/x/tools/gopls"]]
-version = "0.23.0"
-backend = "go:golang.org/x/tools/gopls"
-
 [[tools.node]]
 version = "24.19.0"
 backend = "core:node"
@@ -1161,25 +991,9 @@ url = "https://nodejs.org/dist/v24.19.0/node-v24.19.0-win-x64.zip"
 checksum = "sha256:57f71ab3652e797d84acddc79c81cc9ff1c6ddb2a1974cdb83f00fee9bff4c73"
 url = "https://nodejs.org/dist/v24.19.0/node-v24.19.0-win-x64.zip"
 
-[[tools."npm:@microsoft/compose-language-service"]]
-version = "1.0.0"
-backend = "npm:@microsoft/compose-language-service"
-
 [[tools."npm:@openai/codex"]]
 version = "0.147.0"
 backend = "npm:@openai/codex"
-
-[[tools."npm:@tailwindcss/language-server"]]
-version = "0.16.0"
-backend = "npm:@tailwindcss/language-server"
-
-[[tools."npm:@vtsls/language-server"]]
-version = "0.3.0"
-backend = "npm:@vtsls/language-server"
-
-[[tools."npm:basedpyright"]]
-version = "1.39.9"
-backend = "npm:basedpyright"
 
 [[tools."npm:codeburn"]]
 version = "0.9.19"
@@ -1189,10 +1003,6 @@ backend = "npm:codeburn"
 version = "1.43.0"
 backend = "npm:convex"
 
-[[tools."npm:dockerfile-language-server-nodejs"]]
-version = "0.15.0"
-backend = "npm:dockerfile-language-server-nodejs"
-
 [[tools."npm:playwright"]]
 version = "1.62.1"
 backend = "npm:playwright"
@@ -1201,76 +1011,17 @@ backend = "npm:playwright"
 version = "3.9.6"
 backend = "npm:prettier"
 
-[[tools."npm:svelte-language-server"]]
-version = "0.18.3"
-backend = "npm:svelte-language-server"
+[[tools.ruby]]
+version = "3.3.12"
+backend = "core:ruby"
 
-[[tools."npm:vscode-langservers-extracted"]]
-version = "4.10.0"
-backend = "npm:vscode-langservers-extracted"
+[tools.ruby."platforms.windows-x64"]
+checksum = "sha256:f8d534a44e47e5b72abe557497763128b93e9356bd91397a3d7b9e0a11572943"
+url = "https://github.com/oneclick/rubyinstaller2/releases/download/RubyInstaller-3.3.12-1/rubyinstaller-3.3.12-1-x64.7z"
 
-[[tools."npm:yaml-language-server"]]
-version = "1.24.0"
-backend = "npm:yaml-language-server"
-
-[[tools.python]]
-version = "3.14.6"
-backend = "core:python"
-
-[tools.python."platforms.linux-arm64"]
-checksum = "sha256:8ad1ec529cd1708245e8661a463245fc1479c43cbfd66e58b095456ebf77180a"
-url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260804/cpython-3.14.6+20260804-aarch64-unknown-linux-gnu-install_only_stripped.tar.gz"
-provenance = "github-attestations"
-
-[tools.python."platforms.linux-arm64-musl"]
-checksum = "sha256:85dbb537dc5d6679edabfb61cefdf2511d26cb8669662c4563202b0990e79b4a"
-url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260804/cpython-3.14.6+20260804-aarch64-unknown-linux-musl-install_only_stripped.tar.gz"
-provenance = "github-attestations"
-
-[tools.python."platforms.linux-x64"]
-checksum = "sha256:ba960817e542642021135db330d875f410f4e14c64a62e2ae5faf3697ada08b2"
-url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260804/cpython-3.14.6+20260804-x86_64-unknown-linux-gnu-install_only_stripped.tar.gz"
-provenance = "github-attestations"
-
-[tools.python."platforms.linux-x64-baseline"]
-checksum = "sha256:ba960817e542642021135db330d875f410f4e14c64a62e2ae5faf3697ada08b2"
-url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260804/cpython-3.14.6+20260804-x86_64-unknown-linux-gnu-install_only_stripped.tar.gz"
-provenance = "github-attestations"
-
-[tools.python."platforms.linux-x64-musl"]
-checksum = "sha256:cbedbddcc6b2de99310015e629df67aeb732f622bbf258ec5d310757f85ab7ac"
-url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260804/cpython-3.14.6+20260804-x86_64-unknown-linux-musl-install_only_stripped.tar.gz"
-provenance = "github-attestations"
-
-[tools.python."platforms.linux-x64-musl-baseline"]
-checksum = "sha256:cbedbddcc6b2de99310015e629df67aeb732f622bbf258ec5d310757f85ab7ac"
-url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260804/cpython-3.14.6+20260804-x86_64-unknown-linux-musl-install_only_stripped.tar.gz"
-provenance = "github-attestations"
-
-[tools.python."platforms.macos-arm64"]
-checksum = "sha256:e0d4e5066aef3248c22e08a07546bfd5edeaca904c91fadc296be720998ec2ec"
-url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260804/cpython-3.14.6+20260804-aarch64-apple-darwin-install_only_stripped.tar.gz"
-provenance = "github-attestations"
-
-[tools.python."platforms.macos-x64"]
-checksum = "sha256:78ded4c4f0b6a931240f09bd20608533bb40dd71c1ff953c7267359075ca8b16"
-url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260804/cpython-3.14.6+20260804-x86_64-apple-darwin-install_only_stripped.tar.gz"
-provenance = "github-attestations"
-
-[tools.python."platforms.macos-x64-baseline"]
-checksum = "sha256:78ded4c4f0b6a931240f09bd20608533bb40dd71c1ff953c7267359075ca8b16"
-url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260804/cpython-3.14.6+20260804-x86_64-apple-darwin-install_only_stripped.tar.gz"
-provenance = "github-attestations"
-
-[tools.python."platforms.windows-x64"]
-checksum = "sha256:ada613a2af32c04cf7c54726243c56d76f0e59f5f61d2f28371d3b9d8efad566"
-url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260804/cpython-3.14.6+20260804-x86_64-pc-windows-msvc-install_only_stripped.tar.gz"
-provenance = "github-attestations"
-
-[tools.python."platforms.windows-x64-baseline"]
-checksum = "sha256:ada613a2af32c04cf7c54726243c56d76f0e59f5f61d2f28371d3b9d8efad566"
-url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260804/cpython-3.14.6+20260804-x86_64-pc-windows-msvc-install_only_stripped.tar.gz"
-provenance = "github-attestations"
+[tools.ruby."platforms.windows-x64-baseline"]
+checksum = "sha256:f8d534a44e47e5b72abe557497763128b93e9356bd91397a3d7b9e0a11572943"
+url = "https://github.com/oneclick/rubyinstaller2/releases/download/RubyInstaller-3.3.12-1/rubyinstaller-3.3.12-1-x64.7z"
 
 [[tools.ruby]]
 version = "3.3.12"
@@ -1333,24 +1084,12 @@ url = "https://github.com/oneclick/rubyinstaller2/releases/download/RubyInstalle
 checksum = "sha256:f8d534a44e47e5b72abe557497763128b93e9356bd91397a3d7b9e0a11572943"
 url = "https://github.com/oneclick/rubyinstaller2/releases/download/RubyInstaller-3.3.12-1/rubyinstaller-3.3.12-1-x64.7z"
 
-[[tools.ruby]]
-version = "3.3.12"
-backend = "core:ruby"
-
-[tools.ruby."platforms.windows-x64"]
-checksum = "sha256:f8d534a44e47e5b72abe557497763128b93e9356bd91397a3d7b9e0a11572943"
-url = "https://github.com/oneclick/rubyinstaller2/releases/download/RubyInstaller-3.3.12-1/rubyinstaller-3.3.12-1-x64.7z"
-
-[tools.ruby."platforms.windows-x64-baseline"]
-checksum = "sha256:f8d534a44e47e5b72abe557497763128b93e9356bd91397a3d7b9e0a11572943"
-url = "https://github.com/oneclick/rubyinstaller2/releases/download/RubyInstaller-3.3.12-1/rubyinstaller-3.3.12-1-x64.7z"
-
 [[tools.rust]]
 version = "stable"
 backend = "core:rust"
 
 [tools.rust.options]
-components = "cargo,clippy,rust-analyzer,rustc,rustfmt"
+components = "cargo,clippy,rustc,rustfmt"
 profile = "minimal"
 targets = "wasm32-unknown-unknown"
 

@@ -67,7 +67,6 @@ in {
 
   programs.zsh.initContent = lib.mkOrder 1100 ''
     if [[ $TERM_PROGRAM == ghostty &&
-          -z $CMUX_SHELL_INTEGRATION &&
           -r "$GHOSTTY_RESOURCES_DIR/shell-integration/zsh/ghostty-integration" ]]; then
       source "$GHOSTTY_RESOURCES_DIR/shell-integration/zsh/ghostty-integration"
     fi

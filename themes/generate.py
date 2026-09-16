@@ -1,4 +1,8 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.14"
+# dependencies = []
+# ///
 """Validate Clarity definitions and generate Ghostty themes and viewer data."""
 
 from __future__ import annotations
@@ -26,21 +30,6 @@ COLOR_NAMES = ("black", "red", "green", "yellow", "blue", "magenta", "cyan", "wh
 HEX_COLOR = re.compile(r"^#[0-9a-f]{6}$")
 THEME_ID = re.compile(r"^clarity-[a-z0-9]+(?:-[a-z0-9]+)*$")
 APPEARANCES = ("light", "dark")
-
-PI_ROLE_TOKENS = {
-    "panelBackground": "selectedBg",
-    "panelText": "userMessageText",
-    "accent": "accent",
-    "border": "border",
-    "neutral": "muted",
-    "muted": "dim",
-    "red": "error",
-    "green": "success",
-    "yellow": "warning",
-    "blue": "accent",
-    "magenta": "customMessageLabel",
-    "cyan": "mdCode",
-}
 
 NVIM_GROUPS = (
     "Comment",
@@ -182,19 +171,7 @@ def validate_selection(themes: list[dict[str, Any]]) -> dict[str, Any]:
 def validate_profile(path: Path) -> dict[str, Any]:
     profile = read_json(path)
     common = {"schemaVersion", "application", "appearance", "label", "sourceTheme"}
-    if profile.get("application") == "pi":
-        require_keys(profile, common | {"roles"}, common | {"roles"}, str(path))
-        roles = profile["roles"]
-        expected = set(PI_ROLE_TOKENS)
-        if not isinstance(roles, dict):
-            raise ThemeError(f"{path}.roles: expected an object")
-        require_keys(roles, expected, expected, f"{path}.roles")
-        for role, index in roles.items():
-            if not isinstance(index, int) or not 0 <= index <= 15:
-                raise ThemeError(
-                    f"{path}.roles.{role}: expected an ANSI index from 0 to 15"
-                )
-    elif profile.get("application") == "neovim":
+    if profile.get("application") == "neovim":
         require_keys(profile, common | {"groups"}, common | {"groups"}, str(path))
         groups = profile["groups"]
         if not isinstance(groups, dict):
@@ -228,7 +205,7 @@ def validate_profile(path: Path) -> dict[str, Any]:
                     f"{path}.groups.{group}.styles: expected a string array"
                 )
     else:
-        raise ThemeError(f"{path}: application must be pi or neovim")
+        raise ThemeError(f"{path}: application must be neovim")
 
     if profile.get("schemaVersion") != 1:
         raise ThemeError(f"{path}: unsupported schemaVersion")
@@ -256,14 +233,14 @@ def load_model() -> tuple[list[dict[str, Any]], dict[str, Any], list[dict[str, A
     selection = validate_selection(themes)
     profiles = [validate_profile(path) for path in sorted(PROFILES_DIR.glob("*.json"))]
     expected_profiles = {
-        (app, appearance) for app in ("pi", "neovim") for appearance in APPEARANCES
+        (app, appearance) for app in ("neovim",) for appearance in APPEARANCES
     }
     actual_profiles = {
         (profile["application"], profile["appearance"]) for profile in profiles
     }
     if actual_profiles != expected_profiles:
         raise ThemeError(
-            "profiles must contain exactly one light and dark snapshot for Pi and Neovim"
+            "profiles must contain exactly one light and dark snapshot for Neovim"
         )
     return themes, selection, profiles
 
@@ -360,68 +337,6 @@ def check() -> bool:
     return True
 
 
-def discover_pi_theme(name: str, explicit: Path | None) -> Path:
-    if explicit is not None:
-        if not explicit.is_file():
-            raise ThemeError(f"Pi theme does not exist: {explicit}")
-        return explicit
-    settings_path = Path.home() / ".pi" / "agent" / "settings.json"
-    settings = read_json(settings_path)
-    roots = [Path.home() / ".pi" / "agent" / "themes"]
-    packages = settings.get("packages", [])
-    if isinstance(packages, list):
-        roots.extend(
-            Path(value).expanduser() for value in packages if isinstance(value, str)
-        )
-    candidates: list[Path] = []
-    for root in roots:
-        direct = root / f"{name}.json"
-        if direct.is_file():
-            candidates.append(direct)
-        if root.is_dir():
-            candidates.extend(
-                path
-                for path in root.rglob(f"{name}.json")
-                if "node_modules" not in path.parts and ".jj" not in path.parts
-            )
-    unique = sorted(set(path.resolve() for path in candidates))
-    if not unique:
-        raise ThemeError(
-            f"could not discover Pi theme {name!r}; pass --pi-{name.removeprefix('ansi-')} PATH"
-        )
-    return unique[0]
-
-
-def resolve_pi_color(theme: dict[str, Any], token: str, path: Path) -> int:
-    colors = theme.get("colors")
-    variables = theme.get("vars", {})
-    if not isinstance(colors, dict) or token not in colors:
-        raise ThemeError(f"{path}: missing Pi color token {token!r}")
-    value = colors[token]
-    if isinstance(value, str) and value in variables:
-        value = variables[value]
-    if not isinstance(value, int) or not 0 <= value <= 15:
-        raise ThemeError(
-            f"{path}: Pi token {token!r} does not resolve to an ANSI index"
-        )
-    return value
-
-
-def capture_pi_profile(appearance: str, path: Path) -> dict[str, Any]:
-    theme = read_json(path)
-    return {
-        "schemaVersion": 1,
-        "application": "pi",
-        "appearance": appearance,
-        "label": f"Pi ANSI {appearance}",
-        "sourceTheme": theme.get("name", f"ansi-{appearance}"),
-        "roles": {
-            role: resolve_pi_color(theme, token, path)
-            for role, token in PI_ROLE_TOKENS.items()
-        },
-    }
-
-
 def parse_highlights(output: str, appearance: str) -> dict[str, Any]:
     records: dict[str, str] = {}
     current: str | None = None
@@ -494,11 +409,7 @@ def write_profile(profile: dict[str, Any]) -> None:
     atomic_write(path, json.dumps(profile, indent=2, sort_keys=False) + "\n")
 
 
-def refresh_profiles(pi_light: Path | None, pi_dark: Path | None, nvim: str) -> None:
-    write_profile(
-        capture_pi_profile("light", discover_pi_theme("ansi-light", pi_light))
-    )
-    write_profile(capture_pi_profile("dark", discover_pi_theme("ansi-dark", pi_dark)))
+def refresh_profiles(nvim: str) -> None:
     for appearance in APPEARANCES:
         write_profile(capture_nvim_profile(appearance, nvim))
     generate()
@@ -525,10 +436,8 @@ def main() -> int:
         "check", help="validate definitions and check generated artifacts"
     )
     refresh = subparsers.add_parser(
-        "refresh-profiles", help="refresh committed Pi and Neovim snapshots"
+        "refresh-profiles", help="refresh committed Neovim snapshots"
     )
-    refresh.add_argument("--pi-light", type=Path)
-    refresh.add_argument("--pi-dark", type=Path)
     refresh.add_argument("--nvim", default=shutil.which("nvim") or "nvim")
     subparsers.add_parser("preview", help="open the permanent theme viewer")
     args = parser.parse_args()
@@ -540,7 +449,7 @@ def main() -> int:
         elif command == "check":
             return 0 if check() else 1
         elif command == "refresh-profiles":
-            refresh_profiles(args.pi_light, args.pi_dark, args.nvim)
+            refresh_profiles(args.nvim)
         elif command == "preview":
             preview()
     except ThemeError as error:

@@ -1,12 +1,21 @@
 # Lab Hosts
 
+Hades, Poseidon, Zeus, Eris, and Charon share one mini lab. See the
+[machine inventory](../hosts.md) for the full fleet and authoritative role overview,
+including Nyx, Daedalus, Nike, and Persephone.
+
 ## Eris
 
-Eris remains on macOS and is managed by `darwinConfigurations.eris` plus Home Manager. nix-darwin owns supported system settings and Home Manager owns user tools. It may be a macOS-capability worker, but Linux services must not depend on it being online. Whether it hosts always-on work or is the sole deployment origin remains undecided.
+Eris is the Mac worker and remains on macOS, managed by `darwinConfigurations.eris` plus Home Manager. nix-darwin owns supported system settings and Home Manager owns user tools. Linux services must not depend on it being online; its worker role does not make it the sole deployment origin.
 
 ## Linux hosts: Hades, Poseidon, and Zeus
 
 Each host is independently exposed as `nixosConfigurations.<hostname>` with Home Manager for the operator account. The repository now has NixOS configurations for all three; any real-world Ubuntu-to-NixOS transition must still preserve bootable rollback and recovery access.
+
+Hades is assigned shared Docker and selected network services; Poseidon and Zeus
+are Linux workers with Cage for computer-use workflows. Hades is headless and
+does not include the Cage desktop group. These assignments establish intended roles, not deployed
+service status. See the [shared Docker plan](docker.md) for rollout requirements.
 
 For each host:
 

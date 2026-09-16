@@ -69,9 +69,6 @@
     "button": true,
   },
   "agent_servers": {
-    "pi-acp": {
-      "type": "registry"
-    },
     "opencode": {
       "default_config_options": {
         "effort": "low",
@@ -117,7 +114,6 @@
   },
   "proxy": "",
   "agent": {
-    "terminal_init_command": "pi-tai-dev",
     "thread_summary_model": {
       "provider": "openai-subscribed",
       "model": "gpt-5.6-luna",

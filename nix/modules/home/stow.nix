@@ -1,5 +1,19 @@
 {config, hostProfile, lib, pkgs, resolvedGroups, ...}: let
   home = config.home.homeDirectory;
+  managed = hostProfile ? lab;
+  deployedSource = pkgs.runCommand "dotfiles-stow-source" {} (''
+    mkdir -p "$out"
+  '' + lib.concatMapStringsSep "\n" (item: ''
+    cp -R ${lib.cleanSource (../../../stow + "/${item.name}")} "$out/${item.name}"
+  '') resolvedGroups.stow);
+  retired = lib.filter (item: !(selected item.name)) [
+    { name = "cmux"; target = ".config/cmux"; }
+    { name = "grok"; target = ".grok"; }
+    { name = "mise"; target = ".config/mise"; }
+    { name = "zed"; target = ".config/zed"; }
+    { name = "ghostty-themes"; target = ".config/ghostty/themes"; }
+    { name = "kanata"; target = ".config/kanata"; }
+  ];
   selected = name: lib.any (item: item.name == name) resolvedGroups.stow;
   commands = import ../../lib/stow.nix { inherit lib pkgs; } {
     inherit home;
@@ -7,10 +21,20 @@
   };
   inherit (commands) mkdirCommands stowCommands;
 in {
+  home.extraDependencies = lib.optional (selected "agents")
+    (import ../../handoff-reference-package.nix { inherit pkgs; });
+
   home.activation.stowDotfiles = lib.hm.dag.entryAfter ["writeBoundary"] ''
-    STOW_DIR="${home}/.dotfiles/stow"
+    ${lib.optionalString managed ''
+      ${pkgs.python3}/bin/python3 ${../../../scripts/prepare-managed-stow.py} \
+        ${lib.escapeShellArg home} ${deployedSource} \
+        ${lib.escapeShellArg (builtins.toJSON resolvedGroups.stow)} \
+        ${lib.escapeShellArg (builtins.toJSON retired)}
+    ''}
+    STOW_DIR="${home}/${if managed then ".local/share/dotfiles/stow" else ".dotfiles/stow"}"
     ${mkdirCommands}
 
+    ${lib.optionalString (!managed) ''
     # Kanata is no longer managed. Remove only the stale Stow-owned link,
     # preserving any replacement file the user may have created.
     stale_kanata="${home}/.config/kanata/macos.kbd"
@@ -19,6 +43,8 @@ in {
         */stow/kanata/macos.kbd) rm -f "$stale_kanata" ;;
       esac
     fi
+
+    ''}
 
     ${lib.optionalString (selected "ghostty-themes") ''
       # Ordered migration: old Home Manager Ghostty theme links must be removed
@@ -35,7 +61,7 @@ in {
       ${pkgs.stow}/bin/stow --dir="$STOW_DIR" --target="$ghostty_theme_dir" --restow ghostty-themes
     ''}
 
-    ${lib.optionalString (lib.any (name: !(selected name)) [ "cmux" "mise" "zed" "ghostty-themes" ]) ''
+    ${lib.optionalString (!managed && lib.any (name: !(selected name)) [ "cmux" "grok" "mise" "zed" "ghostty-themes" ]) ''
       cleanup_stow_links() {
         package_name="$1"
         target_dir="$2"
@@ -44,12 +70,13 @@ in {
         find "$target_dir" -type l | while read -r link; do
           target="$(readlink "$link" || true)"
           case "$target" in
-            "$STOW_DIR/$package_name"/*) rm -f "$link" ;;
+            "$STOW_DIR/$package_name"/*|*/stow/"$package_name"/*) rm -f "$link" ;;
           esac
         done
       }
 
       ${lib.optionalString (!(selected "cmux")) ''cleanup_stow_links cmux "${home}/.config/cmux"''}
+      cleanup_stow_links grok "${home}/.grok"
       ${lib.optionalString (!(selected "mise")) ''cleanup_stow_links mise "${home}/.config/mise"''}
       ${lib.optionalString (!(selected "zed")) ''cleanup_stow_links zed "${home}/.config/zed"''}
       ${lib.optionalString (!(selected "ghostty-themes")) ''cleanup_stow_links ghostty-themes "${home}/.config/ghostty/themes"''}

@@ -1,0 +1,209 @@
+#!/usr/bin/env python3
+"""Prepare or import the signed private release matching this dotfiles lock."""
+import argparse
+import hashlib
+import json
+import os
+from pathlib import Path, PurePosixPath
+import re
+import shutil
+import subprocess
+import tarfile
+import tempfile
+
+SYSTEMS = {"aarch64-darwin", "aarch64-linux", "x86_64-linux"}
+STORE = re.compile(r"/nix/store/[0-9abcdfghijklmnpqrsvwxyz]{32}-[A-Za-z0-9+._?=-]+")
+
+
+def json_command(command):
+    return json.loads(subprocess.check_output(command, text=True))
+
+
+def path_valid(value, drv=False):
+    return isinstance(value, str) and STORE.fullmatch(value) and value.endswith(".drv") == drv
+
+
+def candidate(root, system):
+    lock_bytes = (root / "flake.lock").read_bytes()
+    lock = json.loads(lock_bytes)
+    node_id = lock["nodes"][lock["root"]]["inputs"]["jio"]
+    if not isinstance(node_id, str):
+        raise ValueError("Jio must have a direct locked input")
+    locked = lock["nodes"][node_id]["locked"]
+    revision = locked.get("rev", "")
+    repository = locked.get("owner", "") + "/" + locked.get("repo", "")
+    if locked.get("type") != "github" or locked.get("host", "github.com") != "github.com" or any(part in {".", ".."} for part in repository.split("/")) or not re.fullmatch(r"[0-9a-f]{40}", revision) or not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repository):
+        raise ValueError("Jio input must pin a GitHub commit")
+    if system not in SYSTEMS:
+        raise ValueError("unsupported system")
+    expression = ('let f = builtins.getFlake ' + json.dumps(str(root)) + '; p = f.inputs.jio.packages.' + system + '.jio; in { storePath = p.outPath; derivationPath = p.drvPath; revision = f.inputs.jio.rev or null; }')
+    expected = json_command([str(root / "scripts/nix-with-github"), "eval", "--no-update-lock-file", "--impure", "--json", "--expr", expression])
+    if expected.pop("revision", None) != revision or (root / "flake.lock").read_bytes() != lock_bytes:
+        raise ValueError("Jio lock changed or evaluation resolved another revision")
+    if not path_valid(expected.get("storePath")) or not path_valid(expected.get("derivationPath"), True):
+        raise ValueError("Nix returned invalid package paths")
+    return dict(expected, repository=repository, revision=revision, system=system)
+
+
+def digest(path):
+    result = hashlib.sha256()
+    with path.open("rb") as source:
+        for chunk in iter(lambda: source.read(1024 * 1024), b""):
+            result.update(chunk)
+    return result.hexdigest()
+
+
+def validate_assets(directory, expected):
+    name = "jio-" + expected["system"]
+    metadata_path = directory / (name + ".json")
+    archive = directory / (name + ".tar.gz")
+    for path in (metadata_path, archive):
+        if path.is_symlink() or not path.is_file():
+            raise ValueError("release assets must be regular files")
+    if metadata_path.stat().st_size > 4 * 1024 * 1024:
+        raise ValueError("release metadata is oversized")
+    metadata = json.loads(metadata_path.read_text())
+    if not isinstance(metadata, dict) or metadata.get("schemaVersion") != 1 or any(metadata.get(key) != value for key, value in expected.items()):
+        raise ValueError("release metadata does not match the current lock and package")
+    closure = metadata.get("closurePaths")
+    if not isinstance(closure, list) or not closure or not all(path_valid(path) for path in closure) or closure != sorted(set(closure)) or expected["storePath"] not in closure:
+        raise ValueError("invalid closure manifest")
+    if metadata.get("archive") != {"name": archive.name, "sha256": digest(archive)}:
+        raise ValueError("release archive checksum mismatch")
+    return metadata, archive
+
+
+def extract_cache(archive, destination, metadata):
+    # Extract only the flat cache metadata and NAR payload namespace. Never use
+    # extractall: links, special files, traversal, duplicate names and extra trees fail.
+    with tarfile.open(archive, "r:gz") as tar:
+        seen = set()
+        for entry in tar:
+            name = entry.name
+            parts = PurePosixPath(name).parts
+            if name in seen or not parts or any(part in (".", "..") for part in name.split("/")) or name.startswith("/"):
+                raise ValueError("unsafe or duplicate archive path")
+            seen.add(name)
+            permitted = name == "nix-cache-info" or bool(re.fullmatch(r"[0-9abcdfghijklmnpqrsvwxyz]{32}\.narinfo", name)) or bool(re.fullmatch(r"nar/[A-Za-z0-9+._=-]+", name))
+            # Nix may initialize these empty namespaces in a file cache.
+            # Contents remain outside the release contract and fail below.
+            if entry.isdir() and name in {"nar", "log", "build-trace-v2"}:
+                (destination / name).mkdir(exist_ok=True)
+                continue
+            if not entry.isfile() or not permitted:
+                raise ValueError("unsupported cache archive entry")
+            target = destination / name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            with tar.extractfile(entry) as source, target.open("xb") as output:
+                shutil.copyfileobj(source, output)
+    if not (destination / "nix-cache-info").is_file():
+        raise ValueError("missing cache information")
+    info = (destination / "nix-cache-info").read_text()
+    if "StoreDir: /nix/store" not in info.splitlines():
+        raise ValueError("unexpected cache store directory")
+    closure = set(metadata["closurePaths"])
+    expected_narinfos = {Path(path).name.split("-", 1)[0] + ".narinfo": path for path in closure}
+    if {path.name for path in destination.glob("*.narinfo")} != set(expected_narinfos):
+        raise ValueError("cache entries differ from the runtime closure")
+    payloads = set()
+    for name, store_path in expected_narinfos.items():
+        fields = {}
+        for line in (destination / name).read_text().splitlines():
+            key, separator, value = line.partition(": ")
+            if not separator or (key in fields and key != "Sig"):
+                raise ValueError("invalid cache entry fields")
+            fields[key] = value
+        if fields.get("StorePath") != store_path:
+            raise ValueError("cache store path mismatch")
+        if fields.get("Compression") not in {"xz", "zstd", "gzip", "bzip2", "none"}:
+            raise ValueError("unsupported NAR compression")
+        url = fields.get("URL", "")
+        if not re.fullmatch(r"nar/[A-Za-z0-9+._=-]+", url) or not (destination / url).is_file():
+            raise ValueError("cache payload escapes archive or is missing")
+        payloads.add(url)
+        references = fields.get("References", "").split()
+        if any("/" in reference or "/nix/store/" + reference not in closure for reference in references):
+            raise ValueError("cache reference leaves the declared closure")
+        # Nix verifies NAR hashes and signatures during import; require signed
+        # entries now so accidental unsigned producer output fails before import.
+        if not fields.get("Sig"):
+            raise ValueError("cache entry is unsigned")
+    actual_payloads = {path.relative_to(destination).as_posix() for path in (destination / "nar").glob("*")}
+    if payloads != actual_payloads:
+        raise ValueError("unreferenced cache payload")
+
+
+def validate_receipt(directory, expected):
+    receipt = directory / "receipt.json"
+    if receipt.is_symlink() or not receipt.is_file() or receipt.stat().st_size > 16384:
+        raise ValueError("prepared release receipt is missing or invalid")
+    if json.loads(receipt.read_text()) != expected:
+        raise ValueError("prepared release no longer matches the locked package")
+
+
+def cache_directory(expected):
+    base = Path(os.environ.get("XDG_CACHE_HOME", str(Path.home() / ".cache")))
+    if not base.is_absolute():
+        raise ValueError("XDG_CACHE_HOME must be absolute")
+    return base / "jio/releases" / expected["repository"] / expected["revision"] / expected["system"]
+
+
+def run(args, root):
+    system = args.system or subprocess.check_output(["nix", "eval", "--raw", "--impure", "--expr", "builtins.currentSystem"], text=True).strip()
+    expected = candidate(root, system)
+    directory = cache_directory(expected)
+    if args.command == "prepare":
+        repository = json_command(["gh", "api", "repos/" + expected["repository"]])
+        if repository.get("private") is not True:
+            raise ValueError("release repository is not private")
+        tag = "nix-" + expected["revision"]
+        release = json_command(["gh", "api", "repos/" + expected["repository"] + "/releases/tags/" + tag])
+        if release.get("draft") or release.get("tag_name") != tag:
+            raise ValueError("release is not complete")
+        ref = json_command(["gh", "api", "repos/" + expected["repository"] + "/git/ref/tags/" + tag])
+        if ref.get("object") != {"sha": expected["revision"], "type": "commit", "url": ref.get("object", {}).get("url")}:
+            raise ValueError("release tag does not match the lock")
+        if directory.exists():
+            validate_receipt(directory, expected)
+            metadata, archive = validate_assets(directory, expected)
+            with tempfile.TemporaryDirectory(prefix="jio-cache-check-") as check:
+                extract_cache(archive, Path(check), metadata)
+            print(str(directory))
+            return
+        directory.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+        with tempfile.TemporaryDirectory(prefix=".prepare-", dir=directory.parent) as temporary:
+            staged = Path(temporary)
+            subprocess.run(["gh", "release", "download", tag, "--repo", expected["repository"], "--dir", str(staged), "--pattern", "jio-" + system + ".json", "--pattern", "jio-" + system + ".tar.gz"], check=True)
+            metadata, archive = validate_assets(staged, expected)
+            with tempfile.TemporaryDirectory(prefix="jio-cache-check-") as check:
+                extract_cache(archive, Path(check), metadata)
+            (staged / "receipt.json").write_text(json.dumps(expected, sort_keys=True) + "\n")
+            os.rename(staged, directory)
+        print(str(directory))
+    else:
+        validate_receipt(directory, expected)
+        metadata, archive = validate_assets(directory, expected)
+        with tempfile.TemporaryDirectory(prefix="jio-cache-import-") as temporary:
+            cache = Path(temporary)
+            extract_cache(archive, cache, metadata)
+            command = ["nix", "copy"]
+            if args.to_store:
+                command += ["--to", args.to_store]
+            command += ["--from", cache.as_uri(), "--option", "require-sigs", "true", expected["storePath"]]
+            subprocess.run(command, check=True)
+        print(expected["storePath"])
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("command", choices=("prepare", "import"))
+    parser.add_argument("--system", choices=sorted(SYSTEMS))
+    parser.add_argument("--to-store", help="Explicit destination Nix store for import (defaults to the local daemon)")
+    args = parser.parse_args()
+    if args.to_store and args.command != "import":
+        parser.error("--to-store is only valid for import")
+    os.umask(0o077)
+    try:
+        run(args, Path(__file__).resolve().parent.parent)
+    except (ValueError, KeyError, OSError, tarfile.TarError, subprocess.CalledProcessError) as error:
+        parser.exit(1, f"Jio release failed: {error}\n")

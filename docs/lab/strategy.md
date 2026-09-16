@@ -4,7 +4,7 @@ Status: current direction
 
 ## Goal
 
-Manage the lab computers from this flake while keeping workload placement flexible. This document does not replace the router, NAS, switch, or other existing infrastructure.
+Manage the lab computers from this flake with the roles recorded in the [machine inventory](../hosts.md). Hades, Poseidon, Zeus, Eris, and Charon share one mini lab. This document does not replace the router, NAS, switch, or other existing infrastructure.
 
 ## Recommended operating model
 
@@ -64,18 +64,30 @@ Hermes and other agent workers can execute commands and ingest untrusted content
 - CPU, memory, process, and disk limits.
 - Disposable execution state; export only intentional artifacts and durable agent state.
 
-Hermes should have one declared owner host. Choose that host after comparing CPU, RAM, storage, and accelerator availability. The service definition should be reusable so moving ownership is a one-line host configuration change.
+Hermes should have one declared owner among the Linux workers. Choose between Poseidon and Zeus after comparing CPU, RAM, storage, and accelerator availability. The service definition should be reusable so moving ownership is a one-line host configuration change.
 
-## Provisional placement
+## Assigned roles and service placement
 
-Until hardware is inventoried:
+- `hades`: headless shared default Docker host over Tailscale and selected network services.
+- `poseidon` and `zeus`: Linux workers with Cage for computer-use workflows.
+- `eris`: Mac worker.
+- `charon`: existing lab router.
+- `nyx`: daily Mac workstation and remote Docker client.
 
-- `eris`: configuration and deployment origin; optional macOS-only runner.
-- One Linux host: Forgejo and other stable, low-risk applications.
-- One Linux host: Hermes owner and persistent agent gateway.
-- One Linux host: general background workers and Forgejo Actions runners.
+These roles are settled; individual service deployments still require capacity
+checks and explicit host configuration. Hades's network services remain to be
+selected. Keep essential routing and access independent of development containers.
+See the [shared Docker plan](docker.md) for client behavior and rollout steps.
 
-This is a placement template, not a permanent assignment to specific hostnames. Prefer the most reliable disk for Forgejo, the strongest compute for Hermes, and the remaining machine for disposable workers.
+Interactive Docker clients default to Hades. Jobs assigned to a worker must use
+that worker's own execution environment, explicitly selecting a local container
+runtime when needed. Sending a Docker command to Hades consumes Hades's compute,
+even if the command originates on Poseidon or Zeus.
+
+Forgejo remains a proposed persistent service; choose its placement after checking
+storage and isolation requirements. Assign Hermes and Linux runners across Poseidon
+and Zeus from measured capacity. Keep untrusted jobs isolated from Hades's Docker
+administration and persistent service data.
 
 ## Deployment lifecycle
 
@@ -104,7 +116,7 @@ Do not make every host automatically follow the repository head. Use reviewed, e
 5. Migrate the least critical Ubuntu host to NixOS first.
 6. Prove remote deployment, rollback, secret provisioning, and restore.
 7. Migrate the remaining Linux hosts individually.
-8. Assign final workloads from measured capacity rather than hostname assumptions.
+8. Assign individual services within the agreed host roles using measured capacity.
 
 ## Reference basis
 

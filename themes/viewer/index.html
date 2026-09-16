@@ -34,13 +34,12 @@
     .swatch b { font-size: 13px; }
     .swatch:nth-child(2) { border-radius: 7px 0 0 7px; }
     .swatch:last-child { border-radius: 0 7px 7px 0; }
-    .previews { display: grid; grid-template-columns: 1fr 1fr; gap: 17px; margin-top: 19px; }
+    .previews { display: grid; grid-template-columns: 1fr; gap: 17px; margin-top: 19px; }
     .window { border: 1px solid #0002; border-radius: 10px; overflow: hidden; font: 13px/1.5 "CommitMono Nerd Font", "SFMono-Regular", monospace; box-shadow: 0 6px 18px #00000012; }
     .bar { height: 30px; border-bottom: 1px solid #0002; display: flex; align-items: center; padding: 0 10px; gap: 6px; font: 11px ui-sans-serif; }
     .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; opacity: .35; }
     .bar-title { margin-left: 6px; opacity: .65; }
     .screen { padding: 14px; min-height: 304px; }
-    .pi-logo { font-weight: 900; margin-bottom: 7px; }
     .message, .tool { padding: 8px 10px; margin: 8px 0; border-radius: 5px; }
     .editor { padding: 6px 9px; border: 2px solid; border-radius: 5px; margin-top: 10px; }
     .code { padding: 8px 10px; margin: 8px 0; border-left: 3px solid; }
@@ -74,11 +73,11 @@
 <body>
   <header>
     <h1>Clarity Theme Lab</h1>
-    <p class="lede">The Clarity family is inspired by Atom One and Tokyo Night. Select a theme to render its real Pi and Neovim ANSI combinations.</p>
+    <p class="lede">The Clarity family is inspired by Atom One and Tokyo Night. Select a theme to render its real Neovim ANSI combinations.</p>
     <nav class="picker" id="picker" aria-label="Theme selector"></nav>
   </header>
   <main><article class="shell" id="preview"></article></main>
-  <footer>Theme definitions are static and curated. Contrast math is used for diagnostics, while committed Pi and Neovim snapshots keep these previews reproducible.</footer>
+  <footer>Theme definitions are static and curated. Contrast math is used for diagnostics, while committed Neovim snapshots keep these previews reproducible.</footer>
 
   <script src="themes.generated.js"></script>
   <script>
@@ -130,25 +129,6 @@
               </div>`).join("")}
           </div>`).join("");
       }
-      function piPreview(theme, pi) {
-        const role = name => color(theme, pi.roles[name]);
-        return `<section>
-          <h3>${pi.label}</h3>
-          <div class="window" style="background:${theme.ui.background};color:${theme.ui.foreground}">
-            <div class="bar" style="background:${role("panelBackground")};color:${role("panelText")}"><i class="dot"></i><i class="dot"></i><i class="dot"></i><span class="bar-title">committed profile snapshot</span></div>
-            <div class="screen">
-              <div class="pi-logo" style="color:${role("accent")}">π &nbsp;Pi coding agent</div>
-              <div style="color:${role("neutral")}">Working in ~/.dotfiles · thinking <b style="color:${role("magenta")}">high</b></div>
-              <div class="message" style="background:${role("panelBackground")};color:${role("panelText")}"><b style="color:${role("accent")}">You</b> — Improve the terminal palette.</div>
-              <div><b style="color:${role("yellow")}">## Suggested change</b></div>
-              <div>Use <span style="color:${role("cyan")}">distinct ANSI colors</span> and preserve <span style="color:${role("blue")};text-decoration:underline">contrast</span>.</div>
-              <div class="code" style="border-color:${role("neutral")}"><span style="color:${role("magenta")}">const</span> <span style="color:${role("panelText")}">theme</span> <span style="color:${role("neutral")}">=</span> <span style="color:${role("green")}">"${theme.id}"</span>;</div>
-              <div class="tool" style="background:${role("panelBackground")};color:${role("panelText")}"><b>edit</b> <span style="color:${role("neutral")}">nix/modules/shared/ghostty.nix</span><div class="diff" style="color:${role("red")}">− old palette</div><div style="color:${role("green")}">+ ${theme.name}</div></div>
-              <div class="editor" style="border-color:${role("magenta")}">Describe the next change…</div>
-            </div>
-          </div>
-        </section>`;
-      }
       function nvimPreview(theme, nvim) {
         const visual = group(nvim, "Visual");
         const diffNames = ["DiffAdd", "DiffChange", "DiffDelete"];
@@ -186,14 +166,11 @@
       }
       function render(id) {
         const theme = data.themes.find(item => item.id === id) || data.themes[0];
-        const pi = profile("pi", theme.appearance);
         const nvim = profile("neovim", theme.appearance);
         const active = data.selection[theme.appearance] === theme.id;
         location.hash = theme.id;
         document.querySelectorAll(".theme-button").forEach(button => button.classList.toggle("active", button.dataset.id === theme.id));
 
-        const panelForeground = color(theme, pi.roles.panelText);
-        const panelBackground = color(theme, pi.roles.panelBackground);
         const visual = group(nvim, "Visual");
         const diffAdd = group(nvim, "DiffAdd");
         const type = group(nvim, "Type");
@@ -204,9 +181,8 @@
             <div class="badges"><span class="badge">${theme.appearance}</span>${active ? '<span class="badge active-theme">active</span>' : ""}</div>
           </div>
           ${swatches(theme)}
-          <div class="previews">${piPreview(theme, pi)}${nvimPreview(theme, nvim)}</div>
+          <div class="previews">${nvimPreview(theme, nvim)}</div>
           <div class="metrics">
-            ${metric("Pi panel", panelForeground, panelBackground)}
             ${metric("Visual", color(theme, visual.foreground), color(theme, visual.background))}
             ${metric("DiffAdd", color(theme, diffAdd.foreground), color(theme, diffAdd.background))}
             ${metric("Type/default", color(theme, type.foreground), theme.ui.background)}

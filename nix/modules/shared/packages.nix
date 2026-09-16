@@ -12,6 +12,7 @@
 
   home.file.".cargo/config.toml".text = ''
     [build]
+    jobs = 4
     rustc-wrapper = "sccache"
     incremental = false
   '';
@@ -85,22 +86,20 @@
       resvg
 
       # CLI Apps
-      gh
       yazi
 
       # Programming Languages
       cmake
       mise
-      neocmakelsp
       ninja
       postgresql_16
     ])
-    ++ lib.optionals pkgs.stdenv.isDarwin (with pkgs; [
+    ++ lib.optionals pkgs.stdenv.hostPlatform.isDarwin (with pkgs; [
       # Mac only
       docker-credential-helpers
       iproute2mac
     ])
-    ++ lib.optionals (!pkgs.stdenv.isDarwin) (with pkgs; [
+    ++ lib.optionals (!pkgs.stdenv.hostPlatform.isDarwin) (with pkgs; [
       # Linux
       traceroute
       iproute2

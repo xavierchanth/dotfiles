@@ -56,10 +56,6 @@ return {
       src = "https://github.com/nvim-treesitter/nvim-treesitter-textobjects",
       version = nil,
     },
-    { -- Needed by LSP, could make this lazy but it would be pain.
-      src = "https://github.com/b0o/SchemaStore.nvim",
-      version = nil,
-    },
   },
   -- Loads on VimEnter
   lazy = {
@@ -90,38 +86,14 @@ return {
   },
   -- Loads on specific file type
   ft = {
-    cs = {
-      {
-        src = "https://github.com/Hoffs/omnisharp-extended-lsp.nvim",
-        version = nil,
-      },
-      {
-        src = "https://github.com/Decodetalkers/csharpls-extended-lsp.nvim",
-        version = any,
-      },
-    },
     just = {
       { src = "https://github.com/NoahTheDuke/vim-just", version = nil },
-    },
-    lua = {
-      {
-        src = "https://github.com/folke/lazydev.nvim",
-        version = any,
-        data = { config = "config/lazydev" },
-      },
     },
     rust = {
       {
         src = "https://github.com/Saecki/crates.nvim",
         version = any,
         data = { config = "config/crates" },
-      },
-    },
-    go = {
-      {
-        src = "https://github.com/maxandron/goplements.nvim",
-        version = nil,
-        data = { config = "config/goplements" },
       },
     },
     python = {

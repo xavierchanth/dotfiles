@@ -4,13 +4,12 @@ conform.setup({
     if not vim.g.autoformat then
       return
     end
-    return { buf = bufnr, lsp_format = "fallback" }
+    return { buf = bufnr }
   end,
   default_format_opts = {
     timeout_ms = 3000,
     async = false,
     quiet = false,
-    lsp_format = "fallback",
   },
   formatters_by_ft = {
     cmake = { "gersemi" },

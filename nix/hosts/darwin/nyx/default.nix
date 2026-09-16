@@ -1,1 +1,1 @@
-{ groups = []; modules = [ ../../../modules/darwin/close-ports/system.nix ]; }
+{ groups = [ "jio"]; modules = [ ../../../modules/darwin/close-ports/system.nix ]; }

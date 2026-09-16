@@ -4,10 +4,4 @@ require("crates").setup({
       enabled = true,
     },
   },
-  lsp = {
-    enabled = true,
-    actions = true,
-    completion = true,
-    hover = true,
-  },
 })

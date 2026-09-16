@@ -17,29 +17,12 @@
     "$schema" = "https://json.schemastore.org/claude-code-settings.json";
     includeCoAuthoredBy = false;
     model = "opus";
-    permissions = {
-      defaultMode = "auto";
-      deny = [
-        "Artifact"
-        "PushNotification"
-        "RemoteTrigger"
-        "mcp__*"
-      ];
-    };
-    disableAgentView = true;
-    disableAllHooks = true;
-    disableArtifact = true;
-    disableClaudeAiConnectors = true;
+    permissions.defaultMode = "auto";
     disableRemoteControl = true;
-    disableWorkflows = true;
-    agentPushNotifEnabled = false;
     autoMemoryEnabled = false;
-    autoUploadSessions = false;
-    inputNeededNotifEnabled = false;
     remoteControlAtStartup = false;
     env = {
       CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY = "1";
-      CLAUDE_CODE_SKIP_PLUGIN_MCP_SERVERS = "1";
       DISABLE_ERROR_REPORTING = "1";
     };
     sandbox = {
@@ -81,7 +64,7 @@
     '';
   };
 in {
-  home.packages = lib.optionals pkgs.stdenv.isDarwin [themeSync];
+  home.packages = lib.optionals pkgs.stdenv.hostPlatform.isDarwin [themeSync];
 
   home.activation.claudeSettings = lib.hm.dag.entryAfter ["writeBoundary"] ''
     settings="${settingsPath}"
@@ -93,7 +76,20 @@ in {
     # Remove settings that this module previously managed but intentionally retired.
     tmp="$(mktemp "$settings.XXXXXX")"
     if ${pkgs.jq}/bin/jq -s \
-      '(.[0] | del(.env.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC, .env.DISABLE_TELEMETRY)) * .[1]' \
+      '(.[0] | del(
+        .permissions.deny,
+        .disableAgentView,
+        .disableAllHooks,
+        .disableArtifact,
+        .disableClaudeAiConnectors,
+        .disableWorkflows,
+        .agentPushNotifEnabled,
+        .autoUploadSessions,
+        .inputNeededNotifEnabled,
+        .env.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC,
+        .env.CLAUDE_CODE_SKIP_PLUGIN_MCP_SERVERS,
+        .env.DISABLE_TELEMETRY
+      )) * .[1]' \
       "$settings" ${managedSettingsFile} >"$tmp"; then
       mv "$tmp" "$settings"
     else
@@ -101,7 +97,7 @@ in {
       echo "claude.nix: could not merge settings into $settings" >&2
     fi
 
-    ${lib.optionalString pkgs.stdenv.isDarwin "${themeSync}/bin/claude-theme-sync || true"}
+    ${lib.optionalString pkgs.stdenv.hostPlatform.isDarwin "${themeSync}/bin/claude-theme-sync || true"}
   '';
 
   # Claude Code only discovers ~/.claude/skills/<name>/SKILL.md — no recursion,
@@ -139,7 +135,7 @@ in {
 
   # WatchPaths catches the appearance toggle as cfprefsd flushes the global
   # preferences; StartInterval is a backstop for when that write is coalesced.
-  launchd.agents = lib.optionalAttrs pkgs.stdenv.isDarwin {
+  launchd.agents = lib.optionalAttrs pkgs.stdenv.hostPlatform.isDarwin {
     claude-theme-sync = {
       enable = true;
       config = {

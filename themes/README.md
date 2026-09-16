@@ -22,6 +22,6 @@ changes can be reviewed and used without running a build-time generator.
 ./themes/generate.py preview
 ```
 
-`refresh-profiles` reads only theme-related Pi settings and captures Neovim's
+`refresh-profiles` captures Neovim's
 light and dark `:highlight` output. It does not read authentication or session
 files. The generator never commits changes.

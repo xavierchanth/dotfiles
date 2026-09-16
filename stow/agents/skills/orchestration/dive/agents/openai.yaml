@@ -1,0 +1,6 @@
+interface:
+  display_name: "DIVE"
+  short_description: "Coordinate a DIVE Team's software delivery"
+  default_prompt: "Use $dive to coordinate this DIVE Team through design, implementation, and verification."
+policy:
+  allow_implicit_invocation: false

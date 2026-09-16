@@ -3,16 +3,20 @@
   terminal-core = import ./modules/shared/terminal-core;
   ssh = import ./modules/shared/ssh;
   ai-applications = import ./modules/shared/ai-applications;
+  jio = import ./modules/shared/jio;
+  jio-service = import ./modules/shared/jio-service;
   ghostty = import ./modules/shared/ghostty;
   cliproxy = import ./modules/shared/cliproxy;
   mise-workstation = import ./modules/shared/mise-workstation;
   workstation-packages = import ./modules/shared/workstation-packages;
   server-packages = import ./modules/shared/server-packages;
   lab-update-contract = import ./modules/nixos/lab-update-contract;
+  deploy-user = import ./modules/nixos/deploy-user;
   nixos-base = import ./modules/nixos/base;
   ssh-server = import ./modules/nixos/ssh-server;
   tailscale = import ./modules/nixos/tailscale;
-  gnome-desktop = import ./modules/nixos/gnome-desktop;
+  docker-host = import ./modules/nixos/docker-host;
+  cage-desktop = import ./modules/nixos/cage-desktop;
   server-power = import ./modules/nixos/server-power;
   maintenance = import ./modules/nixos/maintenance;
   harmonia-cache = import ./modules/nixos/harmonia-cache;
@@ -21,6 +25,7 @@
   darwin-defaults = import ./modules/darwin/defaults;
   darwin-raycast = import ./modules/darwin/raycast;
   darwin-server-power = import ./modules/darwin/server-power;
+  darwin-server-remote-access = import ./modules/darwin/server-remote-access;
   darwin-desktop-apps = import ./modules/darwin/desktop-apps;
   darwin-server-brew = import ./modules/darwin/homebrew;
 }
