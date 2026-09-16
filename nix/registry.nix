@@ -17,6 +17,7 @@
   tailscale = import ./modules/nixos/tailscale;
   service-gateway = import ./modules/nixos/service-gateway;
   docker-host = import ./modules/nixos/docker-host;
+  homepage = import ./modules/nixos/homepage;
   executor = import ./modules/nixos/executor;
   plane = import ./modules/nixos/plane;
   cage-desktop = import ./modules/nixos/cage-desktop;
