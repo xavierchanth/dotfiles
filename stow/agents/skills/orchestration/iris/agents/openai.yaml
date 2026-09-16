@@ -1,0 +1,6 @@
+interface:
+  display_name: "Iris"
+  short_description: "Coordinate Xavier's Codex work"
+  default_prompt: "Use $iris to coordinate my Tasks, Teams, and Projects through a concise voice-first conversation."
+policy:
+  allow_implicit_invocation: false
