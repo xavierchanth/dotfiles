@@ -2,8 +2,8 @@
 
 `cage-mcp` exposes screenshot-based Computer Use over MCP stdio. The
 `cage-desktop` group installs it and registers `mcp_servers.cage` using
-`codex mcp add` after mise installs Codex. It is selected on Hades, Poseidon,
-and Zeus. Restart the Codex connection after Home Manager activation to discover
+`codex mcp add` after mise installs Codex. It is selected on Poseidon and Zeus.
+Restart the Codex connection after Home Manager activation to discover
 the tools. Building the configuration alone does not install or register them.
 
 ## Interface
