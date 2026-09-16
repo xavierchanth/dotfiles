@@ -16,6 +16,7 @@ Hades is assigned shared Docker and selected network services; Poseidon and Zeus
 are Linux workers with Cage for computer-use workflows. Hades is headless and
 does not include the Cage desktop group. These assignments establish intended roles, not deployed
 service status. See the [shared Docker plan](docker.md) for rollout requirements.
+Hades also owns the tailnet-only [stable service gateway](service-gateway.md).
 
 For each host:
 
