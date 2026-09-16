@@ -1,13 +1,71 @@
-# Routing
+# Vocabulary, Projects, and workspaces
 
-Use `../config/vocabulary.yaml` as a small, private alias index. It groups recognized speech and shorthand under canonical organization, workspace, and generic term keys. Generic terms normalize language without triggering routing. Read `../config/workspaces.yaml` only when a resolved organization or workspace key needs path, owner, repository, or other routing metadata. Live harness state remains authoritative for Projects, Teams, task identities, access, and execution.
+Read private configuration through `~/.agents/config/iris/`. Home Manager links this directory to the Dotfiles checkout's ignored `local/iris/`, independently of the Stow-managed skill tree. Update the files through that overlay; the private data survives skill updates. When the overlay is absent, use conversation and live harness evidence and report the missing setup when persistence is needed.
 
-When either file is absent, continue with conversation and live harness evidence. Create local routing state when Xavier establishes the first durable mapping or asks Iris to initialize it.
+`vocabulary.yaml` stores recognition aliases. `workspaces.yaml` stores organizations, filesystem workspaces, and semantic Projects that reference those workspaces. Live harness state remains authoritative for saved Projects, Teams, task identities, access, and execution. Configuration helps interpret that state; it does not grant access or create saved Projects.
 
-Match saved Projects by canonical primary path. Keep aliases and known transcription variants in `vocabulary.yaml`; keep organization codes and roots, lowercase GitHub owners, workspace and repository names, and canonical primary paths in `workspaces.yaml`. Treat aliases as recognition aids, then use canonical spelling in responses and persisted names. A generic term does not imply a Project or workspace. Keep task IDs, secondary paths, priorities, changing Project display names, and live execution state out of both files.
+## Vocabulary
 
-The expected `config/` paths are links into the private, Git-ignored `~/.dotfiles/local/iris/` directory. Home Manager migrates existing routing files there before Stow activation and recreates the links afterward, so managed source replacement does not discard them. Preserve unrelated entries during updates and never silently replace an existing mapping. Detect alias, canonical-key, and path collisions before writing.
+Use `version: 1` and optional `organizations`, `workspaces`, `projects`, and `terms` mappings. Each canonical key maps to a list of aliases:
 
-When Xavier explicitly establishes an unambiguous durable mapping, persist it without redundant confirmation and report the update naturally. When durability or target is inferred, ambiguous, or collision-prone, propose the mapping or ask one concise question before writing.
+```yaml
+version: 1
+organizations:
+  example: [Example Org]
+workspaces:
+  example/tool: [Example Tool]
+projects:
+  example/integration: [Integration, Tool Integration]
+terms:
+  example-term: [Example Term, Spoken Variant]
+```
 
-An optional workspace-local `.codex/iris.local.toml` may hold detailed private context after routing; it is not the routing index.
+Organization, workspace, and Project keys refer to the corresponding records in `workspaces.yaml`. Terms normalize language independently of any workspace or Project and do not trigger routing. Use Project aliases when recognition depends on the semantic context; use workspace aliases for a repository or folder itself. If an alias has multiple plausible meanings, retain that ambiguity and resolve it from context instead of choosing an arbitrary target.
+
+## Organizations, workspaces, and Projects
+
+Use `version: 1` with optional `organizations`, `workspaces`, and `projects` mappings:
+
+```yaml
+version: 1
+organizations:
+  example:
+    name: Example Org
+    root: /path/to/organization
+    github_owners: [example-owner]
+workspaces:
+  example/config:
+    name: Configuration
+    organization: example
+    primary_path: /path/to/config-repository
+    repository: config
+    github_owner: example-owner
+  example/tool:
+    name: Example Tool
+    organization: example
+    primary_path: /path/to/tool-repository
+projects:
+  example/config:
+    name: Configuration
+    primary_workspace: example/config
+    project_labels: [Configuration]
+    purpose: Maintain machine configuration.
+  example/integration:
+    name: Integration
+    primary_workspace: example/config
+    additional_workspaces: [example/tool]
+    project_labels: [Integration]
+    purpose: Integrate the tool with machine configuration.
+```
+
+Organizations require `name` and `root`. Workspaces require `name` and `primary_path`; organization, repository metadata, and folder purpose are optional. A workspace identifies a repository or ordinary folder on disk. Projects require `name` and `primary_workspace`; organization, purpose, stable saved-Project labels, and additional workspace keys are optional. All references must resolve within their respective mappings.
+
+Multiple Projects may share a primary workspace while having different purposes and additional workspaces. Additional workspaces describe the Project's intended scope, not implicit saved Projects or access permissions. Keep task IDs, priorities, and transient execution status in live coordination state rather than these files.
+
+## Resolution and updates
+
+Normalize vocabulary first, then combine Project purpose, workspace paths, configured labels, conversation context, and live harness evidence. A shared path alone cannot distinguish semantic Projects. Treat configured labels as durable hints and obtain current names and IDs from the harness. Route work to the Project whose purpose fits, using the relevant workspace as its working scope.
+
+When Xavier explicitly establishes an unambiguous durable mapping, persist it without redundant confirmation and report the update naturally. Preserve unrelated entries and check alias collisions, duplicate keys, and unresolved references before writing. Shared paths between Projects are intentional when their purposes differ. When durability or target is inferred or ambiguous, propose the mapping or ask one concise question.
+
+Resolve task references with progressive specificity. Use human-readable task names when talking with Xavier. Before archiving, renaming, moving, handing off, or otherwise changing a task, resolve the intended target to its tool-provided ID. Verify its identity using the exact title, Project, and recent context as needed, then pass that ID explicitly. Use a tool's current-conversation default only when Xavier clearly means the current conversation. If the evidence still does not identify one intended task, ask one concise clarification before making the change.

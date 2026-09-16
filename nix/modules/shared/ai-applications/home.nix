@@ -6,8 +6,8 @@
       --git ${pkgs.git}/bin/git
   '';
 in {
-  # Capture routing files from the current Stow generation before a managed
-  # deployment replaces it, then restore stable links after Stow activation.
+  # Preserve legacy skill-local config before replacing a Stow generation,
+  # then expose the private config beside skills at ~/.agents/config/iris.
   home.activation.migrateIrisRouting = lib.hm.dag.entryBetween ["stowDotfiles"] ["writeBoundary"] (command "migrate");
   home.activation.linkIrisRouting = lib.hm.dag.entryAfter ["stowDotfiles"] (command "link");
 }

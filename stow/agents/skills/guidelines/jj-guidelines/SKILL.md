@@ -27,6 +27,9 @@ Default safety model:
 - Never use destructive commands such as git reset --hard or broad abandon operations unless the user explicitly requests that exact action and scope.
 
 Workspace policy:
+- For collaborative JJ repositories, prefer the existing shared checkout as the accumulation surface because it keeps the stream of edits available for semantic sorting. Use a separate Codex worktree or JJ workspace when independent branch lifecycles, risky experiments, conflicting dependency states, or strong filesystem isolation matter more than sharing one working-copy commit.
+- When several contributors edit one shared checkout, prefer leaving implementation changes uncommitted until their intent, validation, and exact changed-file manifest are known. Coordinate checkpoint mutations so one actor changes JJ history at a time when concurrent edits or review pressure make collisions plausible.
+- When checkpointing shared work, preserve the live working-copy commit and extract only confirmed changes into semantic commits beneath `@`. Leave unrelated, unfinished, or unconfirmed edits in `@`; the working copy need not become clean after each extraction.
 - Jujutsu calls Git-style worktrees "workspaces"; prefer jj workspace commands over git worktree commands inside jj repositories.
 - Create additional workspaces under .jj/workspaces/ with clear task-oriented directory names, e.g. jj workspace add .jj/workspaces/fix-login --name fix-login.
 - Each workspace has its own working-copy commit and may have a different commit checked out; use jj workspace list or jj log to account for other workspace commits before cleanup.
@@ -48,7 +51,7 @@ Checkpoint policy:
 - Group changes by coherent outcome. Keep each feature or fix with its supporting tests and documentation; separate unrelated changes and order prerequisites before their consumers.
 - Prefer extracting each group into a new commit beneath @ while retaining the current working change. Leave unfinished or excluded changes in @; it need not be empty afterward.
 - Use file selection when files map cleanly to outcomes. Inspect and select hunks when a file contains changes belonging to different outcomes.
-- Use one coordinator for checkpoint mutations in a shared workspace. Settle writes to the selected files before extraction; JJ locks do not coordinate agents editing files.
+- Coordinate checkpoint mutations in a shared workspace so one actor changes JJ history at a time. Settle writes to the selected files before extraction; JJ locks do not coordinate agents editing files.
 - Inspect each resulting commit and the remaining diff. Check that each checkpoint contains its intended changes and prerequisites.
 - Do not leave empty described checkpoints. A temporary empty destination is acceptable when immediately populated through squash.
 - Report the resulting commit IDs and descriptions, plus any changes left pending and why.

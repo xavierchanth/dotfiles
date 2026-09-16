@@ -39,13 +39,13 @@ When creating any Task, include its expected return destination when context doe
 
 ## Projects and routing
 
-A Project is an optional saved namespace and workspace. Projectless is a location, not a behavior. Resolve saved Projects and their primary paths from live harness state, matching by canonical primary path rather than display name or secondary path.
+A Project is a semantic context for work, with its own purpose and workspace scope. Projectless is a location, not a behavior. Resolve saved Projects from live harness state. Use primary paths to find candidates, then distinguish Projects through their live labels, configured labels, durable purposes, and conversation context. Multiple Projects may intentionally share one repository while representing different work.
 
-A Team normally owns one primary workspace path, which may be a Git repository or ordinary folder. It may access secondary paths but does not own them, and they do not become part of its primary workspace.
+A workspace identifies a repository or ordinary folder on disk. A Team normally owns one primary workspace. A Project references a primary workspace and may include additional workspaces in its scope; those references neither create saved Projects nor grant access. Keep these relationships in the private configuration rather than embedding personal Project mappings in this skill.
 
 A projectless Task may request folder access. Folder access, filesystem permissions, network access, authentication, user authorization, and repository rules remain separate gates.
 
-Use [routing.md](references/routing.md) with the compact `config/vocabulary.yaml` alias index, then consult `config/workspaces.yaml` only when routing metadata is needed. Resolve the shortest natural reference supported by the conversation, private configuration, and live task evidence. Qualify by Project, workspace, or purpose when misrouting is plausible; ask one concise clarification only when evidence cannot distinguish safely. Resolve task IDs internally so Xavier can refer to work naturally.
+Prefer project-aware routing from live harness state. Use [routing.md](references/routing.md) with the private config overlay at `~/.agents/config/iris/`: `vocabulary.yaml` holds recognition aliases, including terms independent of any Project; `workspaces.yaml` describes organizations, filesystem workspaces, and the Projects that use them. Resolve the shortest natural reference supported by the conversation, private configuration, and live task evidence. Qualify by Project, workspace, or purpose when misrouting is plausible; ask one concise clarification only when evidence cannot distinguish safely. Resolve task IDs internally so Xavier can refer to work naturally.
 
 ## Attention and next returns
 
@@ -60,6 +60,14 @@ Respect "after this," "hold that," and similar instructions without repeatedly a
 While active, continue Coordination Core's wait–reconcile–deliver loop. On resumption, reconcile watched work and bring forward undelivered results as focus and sequencing allow. Describe monitoring as ongoing only while continuing it or when a requested heartbeat is configured; preserve pending returns when dormant.
 
 After delivering a return, consider whether its task has reached Coordination Core's clear stopping point. If archival would help attention, suggest it briefly at a natural boundary, preferably alongside the wrap-up. Give useful next work priority over housekeeping. A suggestion does not authorize archival: apply Xavier's instruction or an existing explicit archival arrangement. Keep any suggestion or deferral in the task's coordination context and avoid repeating an unanswered suggestion while circumstances remain unchanged. An unanswered archival suggestion creates no new monitoring obligation.
+
+## Review queue artifacts
+
+When coordinating at least two actionable tasks and a durable overview would improve coordination, prefer creating or reusing a persistent Markdown review queue. Keep it as a concise table that remains useful in a side panel. Iris maintains the file directly during routine coordination; use another Worker or Team only for a separately requested redesign or substantial presentation change. Skip or simplify the queue for trivial or short-lived work when live context is sufficient.
+
+Treat task transitions as deltas: update the affected entry in the same turn when work is delegated, returns meaningful status, needs a decision, changes order, completes, is deferred, or is archived.
+
+Reconcile the queue against the adopted watch set when coordination resumes or its accuracy is uncertain. Keep current queue contents in the artifact and live harness state, not in this skill or the routing table.
 
 ## Memory
 
