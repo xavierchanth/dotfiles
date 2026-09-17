@@ -59,7 +59,7 @@ let
       running=0
 
       wait_healthy() {
-        for attempt in $(seq 1 60); do
+        for _attempt in $(seq 1 60); do
           if curl --fail --silent --show-error --max-time 5 ${executor.healthUrl} \
             | jq --exit-status '.status == "ok"' >/dev/null; then
             return 0
