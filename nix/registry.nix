@@ -6,6 +6,8 @@
   jio = import ./modules/shared/jio;
   jio-service = import ./modules/shared/jio-service;
   ghostty = import ./modules/shared/ghostty;
+  vicinae = import ./modules/shared/vicinae;
+  vicinae-dev = import ./modules/shared/vicinae-dev;
   cliproxy = import ./modules/shared/cliproxy;
   mise-workstation = import ./modules/shared/mise-workstation;
   workstation-packages = import ./modules/shared/workstation-packages;

@@ -9,6 +9,7 @@
     homebrew-rwx = { url = "github:rwx-cloud/homebrew-tap"; flake = false; };
     home-manager = { url = "github:nix-community/home-manager/master"; inputs.nixpkgs.follows = "nixpkgs"; };
     deploy-rs = { url = "github:serokell/deploy-rs"; inputs.nixpkgs.follows = "nixpkgs"; };
+    vicinae.url = "github:vicinaehq/vicinae/v0.28.2";
     xmt.url = "github:xavierchanth/xmt";
     jio.url = "github:chanthavong-consulting/jio";
   };

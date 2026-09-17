@@ -1,0 +1,40 @@
+{
+  "$schema": "https://raw.githubusercontent.com/vicinaehq/vicinae/v0.28.2/extra/schemas/extension.json",
+  "name": "window-management",
+  "title": "Window Management",
+  "description": "Search-invoked macOS window placement commands for Vicinae",
+  "categories": ["Productivity", "System"],
+  "license": "MIT",
+  "author": "xavierchanth",
+  "icon": "icon.svg",
+  "platforms": ["macOS"],
+  "commands": [
+    { "name": "left-half", "title": "Window: Left Half", "description": "Move the active window to the left half", "mode": "no-view" },
+    { "name": "right-half", "title": "Window: Right Half", "description": "Move the active window to the right half", "mode": "no-view" },
+    { "name": "top-left-quarter", "title": "Window: Top Left Quarter", "description": "Move the active window to the top-left quarter", "mode": "no-view" },
+    { "name": "top-right-quarter", "title": "Window: Top Right Quarter", "description": "Move the active window to the top-right quarter", "mode": "no-view" },
+    { "name": "bottom-left-quarter", "title": "Window: Bottom Left Quarter", "description": "Move the active window to the bottom-left quarter", "mode": "no-view" },
+    { "name": "bottom-right-quarter", "title": "Window: Bottom Right Quarter", "description": "Move the active window to the bottom-right quarter", "mode": "no-view" },
+    { "name": "maximize", "title": "Window: Maximize", "description": "Maximize the active window within the usable screen", "mode": "no-view" },
+    { "name": "restore", "title": "Window: Restore Previous Bounds", "description": "Restore the active window to its previous bounds", "mode": "no-view" },
+    { "name": "center", "title": "Window: Center", "description": "Center the active window on its current screen", "mode": "no-view" },
+    { "name": "next-display", "title": "Window: Next Display", "description": "Move the active window to the next display", "mode": "no-view" },
+    { "name": "previous-display", "title": "Window: Previous Display", "description": "Move the active window to the previous display", "mode": "no-view" },
+    { "name": "resize", "title": "Window: Resize", "description": "Resize and center the active window", "mode": "no-view", "arguments": [
+      { "name": "width", "placeholder": "Width", "type": "text", "required": true },
+      { "name": "height", "placeholder": "Height", "type": "text", "required": true }
+    ] }
+  ],
+  "scripts": {
+    "build": "vici build",
+    "dev": "vici develop",
+    "lint": "vici lint",
+    "test": "tsx --test tests/*.test.ts"
+  },
+  "dependencies": { "@vicinae/api": "0.28.2" },
+  "devDependencies": {
+    "@types/node": "^24.9.2",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.2"
+  }
+}

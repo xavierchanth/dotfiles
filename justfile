@@ -38,3 +38,8 @@ openwrt-render:
 
 openwrt-apply:
   nix run .#openwrt-apply-charon -- --apply
+
+# Requires the opt-in `vicinae-dev` group on the current host. That group
+# disables the immutable extension package while this watcher owns the bundle.
+vicinae-extension-dev:
+  cd "${XDG_DATA_HOME:-$HOME/.local/share}/vicinae/dev-extensions/window-management" && npm install && npm run dev
