@@ -11,6 +11,7 @@ its private CA keys on Hades.
 | `https://lab.xavierchanth.xyz` | `http://127.0.0.1:3000` | `/api/healthcheck` | Homepage |
 | `https://executor.lab.xavierchanth.xyz` | `http://127.0.0.1:4788` | `/api/health` | Executor |
 | `https://plane.lab.xavierchanth.xyz` | `http://127.0.0.1:8080` | `/` | Plane |
+| `https://codex.lab.xavierchanth.xyz` | `http://127.0.0.1:8317` | `/healthz` | CLIProxyAPI |
 
 The reusable `service-gateway` group requires the `tailscale` group. Its typed
 `dotfiles.serviceGateway.routes` option accepts only IPv4 or IPv6 loopback
@@ -48,6 +49,12 @@ steps.
 - Every named origin is proxied without path rewriting or a second
   authentication layer. Responses are unbuffered for SSE and other long-lived
   streams.
+- The CLIProxyAPI origin is deny-by-default. It proxies only `/v1/models`,
+  `/v1/responses`, and `/v1/responses/compact`, preserving each complete path,
+  query, streaming response, and WebSocket upgrade. Every other path returns
+  404 at Caddy. The root, `/healthz`, management UI and API, plugin management
+  resources, and provider OAuth callbacks therefore remain accessible only
+  through CLIProxyAPI's loopback listener on Hades.
 - Plane's application proxy retains ownership of its 10 MiB request-body limit
   and WebSocket application routing; Caddy adds neither a second size limit nor
   path-specific rewrites.
@@ -117,10 +124,17 @@ before advertising the service:
 curl --fail http://127.0.0.1:3000/api/healthcheck
 curl --fail http://127.0.0.1:4788/api/health
 curl --fail --header 'Host: plane.lab.xavierchanth.xyz' http://127.0.0.1:8080/
-sudo systemctl is-active tailscaled.service homepage.service executor.service plane.service caddy.service
+curl --fail http://127.0.0.1:8317/healthz
+sudo systemctl is-active tailscaled.service homepage.service executor.service plane.service cliproxyapi.service caddy.service
 sudo ss -ltnp | grep '127.0.0.1:8443'
 curl --fail --resolve lab.xavierchanth.xyz:8443:127.0.0.1 \
   --cacert ./hades-caddy-root.pem https://lab.xavierchanth.xyz:8443/
+for path in / /healthz /management.html /v0/management /anthropic/callback /codex/callback /antigravity/callback /callback /devin/callback; do
+  test "$(curl --silent --output /dev/null --write-out '%{http_code}' \
+    --resolve codex.lab.xavierchanth.xyz:8443:127.0.0.1 \
+    --cacert ./hades-caddy-root.pem \
+    "https://codex.lab.xavierchanth.xyz:8443$path")" = 404
+done
 ```
 
 Confirm there are no listeners on host ports 80 or 443 and that an unknown SNI
