@@ -1,0 +1,133 @@
+{ lib, mkNixos, contextFor }:
+let
+  homepageHostname = "lab.xavierchanth.xyz";
+  executorHostname = "executor.lab.xavierchanth.xyz";
+  planeHostname = "plane.lab.xavierchanth.xyz";
+  cliProxyApiHostname = "cliproxyapi.lab.xavierchanth.xyz";
+  cpampHostname = "cpamp.lab.xavierchanth.xyz";
+  hades = (mkNixos "hades").config;
+  poseidon = (mkNixos "poseidon").config;
+  zeus = (mkNixos "zeus").config;
+  gateway = hades.dotfiles.serviceGateway;
+  homepageRoute = gateway.routes.${homepageHostname};
+  executorRoute = gateway.routes.${executorHostname};
+  planeRoute = gateway.routes.${planeHostname};
+  cliProxyApiRoute = gateway.routes.${cliProxyApiHostname};
+  cpampRoute = gateway.routes.${cpampHostname};
+  homepageVhost = hades.services.caddy.virtualHosts.${homepageHostname};
+  executorVhost = hades.services.caddy.virtualHosts.${executorHostname};
+  planeVhost = hades.services.caddy.virtualHosts.${planeHostname};
+  cliProxyApiVhost = hades.services.caddy.virtualHosts.${cliProxyApiHostname};
+  cpampVhost = hades.services.caddy.virtualHosts.${cpampHostname};
+  caddy = hades.systemd.services.caddy;
+  serviceConfig = builtins.fromJSON (builtins.readFile gateway.tailscaleService.configFile);
+  systemPackageNames = map lib.getName hades.environment.systemPackages;
+  gatewayHosts = lib.filter
+    (name: builtins.elem "service-gateway" (contextFor name).groupNames)
+    [ "hades" "poseidon" "zeus" ];
+in
+assert gatewayHosts == [ "hades" ];
+assert hades.services.caddy.enable;
+assert !poseidon.services.caddy.enable && !zeus.services.caddy.enable;
+assert builtins.attrNames gateway.routes == [ cliProxyApiHostname cpampHostname executorHostname homepageHostname planeHostname ];
+assert gateway.bindAddress == "127.0.0.1" && gateway.httpsPort == 8443;
+assert gateway.tailscaleService.name == "svc:lab";
+assert gateway.tailscaleService.port == 443;
+assert gateway.tailscaleService.target == "tcp://127.0.0.1:8443";
+assert lib.hasSuffix "-serve-config.json" (toString gateway.tailscaleService.configFile);
+assert serviceConfig.version == "0.0.1";
+assert !serviceConfig.services."svc:lab".advertised;
+assert serviceConfig.services."svc:lab".endpoints."tcp:443" == "tcp://127.0.0.1:8443";
+assert gateway.ca.rootCertificate == "/var/lib/caddy/.local/share/caddy/pki/authorities/local/root.crt";
+assert gateway.ca.fingerprintFile == "/var/lib/caddy/.dotfiles-root-ca.sha256";
+assert homepageRoute.upstream.address == "127.0.0.1" && homepageRoute.upstream.port == 3000;
+assert homepageRoute.healthPath == "/api/healthcheck" && homepageRoute.upstreamUnit == "homepage.service";
+assert executorRoute.upstream.address == "127.0.0.1" && executorRoute.upstream.port == 4788;
+assert executorRoute.healthPath == "/api/health" && executorRoute.upstreamUnit == "executor.service";
+assert planeRoute.upstream.address == "127.0.0.1" && planeRoute.upstream.port == 8080;
+assert planeRoute.healthPath == "/" && planeRoute.upstreamUnit == "plane.service";
+assert cliProxyApiRoute.upstream.address == "127.0.0.1" && cliProxyApiRoute.upstream.port == 8317;
+assert cliProxyApiRoute.healthPath == "/healthz" && cliProxyApiRoute.upstreamUnit == "cliproxyapi.service";
+assert cliProxyApiRoute.allowedPaths == [
+  "/v1/models"
+  "/v1/responses"
+  "/v1/responses/compact"
+];
+assert cpampRoute.upstream.address == "127.0.0.1" && cpampRoute.upstream.port == 18317;
+assert cpampRoute.healthPath == "/health" && cpampRoute.upstreamUnit == "cpa-manager-plus.service";
+assert cpampRoute.allowedPaths == [ ];
+assert homepageVhost.hostName == homepageHostname && homepageVhost.listenAddresses == [ "127.0.0.1" ];
+assert executorVhost.hostName == executorHostname && executorVhost.listenAddresses == [ "127.0.0.1" ];
+assert planeVhost.hostName == planeHostname && planeVhost.listenAddresses == [ "127.0.0.1" ];
+assert cliProxyApiVhost.hostName == cliProxyApiHostname && cliProxyApiVhost.listenAddresses == [ "127.0.0.1" ];
+assert cpampVhost.hostName == cpampHostname && cpampVhost.listenAddresses == [ "127.0.0.1" ];
+assert lib.hasInfix "auto_https disable_redirects" hades.services.caddy.globalConfig;
+assert lib.hasInfix "default_bind 127.0.0.1" hades.services.caddy.globalConfig;
+assert lib.hasInfix "https_port 8443" hades.services.caddy.globalConfig;
+assert lib.hasInfix "protocols h1 h2" hades.services.caddy.globalConfig;
+assert lib.hasInfix "strict_sni_host on" hades.services.caddy.globalConfig;
+assert lib.all (vhost: lib.hasInfix "tls internal" vhost.extraConfig) [ homepageVhost executorVhost planeVhost cliProxyApiVhost cpampVhost ];
+assert lib.hasInfix "reverse_proxy http://127.0.0.1:3000" homepageVhost.extraConfig;
+assert lib.hasInfix "health_uri /api/healthcheck" homepageVhost.extraConfig;
+assert lib.hasInfix "reverse_proxy http://127.0.0.1:4788" executorVhost.extraConfig;
+assert lib.hasInfix "health_uri /api/health" executorVhost.extraConfig;
+assert lib.hasInfix "health_status 2xx" executorVhost.extraConfig;
+assert lib.hasInfix "flush_interval -1" executorVhost.extraConfig;
+assert lib.hasInfix "reverse_proxy http://127.0.0.1:8080" planeVhost.extraConfig;
+assert lib.hasInfix "health_uri /" planeVhost.extraConfig;
+assert lib.hasInfix "health_status 2xx" planeVhost.extraConfig;
+assert lib.hasInfix "flush_interval -1" planeVhost.extraConfig;
+assert lib.hasInfix "@dataPlane path /v1/models /v1/responses /v1/responses/compact" cliProxyApiVhost.extraConfig;
+assert lib.hasInfix "reverse_proxy @dataPlane http://127.0.0.1:8317" cliProxyApiVhost.extraConfig;
+assert lib.hasInfix "health_uri /healthz" cliProxyApiVhost.extraConfig;
+assert lib.hasInfix "health_status 2xx" cliProxyApiVhost.extraConfig;
+assert lib.hasInfix "flush_interval -1" cliProxyApiVhost.extraConfig;
+assert lib.hasInfix "respond 404" cliProxyApiVhost.extraConfig;
+assert lib.hasInfix "reverse_proxy http://127.0.0.1:18317" cpampVhost.extraConfig;
+assert lib.hasInfix "health_uri /health" cpampVhost.extraConfig;
+assert lib.hasInfix "health_status 2xx" cpampVhost.extraConfig;
+assert lib.hasInfix "flush_interval -1" cpampVhost.extraConfig;
+assert !lib.hasInfix "@dataPlane" cpampVhost.extraConfig;
+assert !lib.hasInfix "respond 404" cpampVhost.extraConfig;
+assert !lib.hasInfix "127.0.0.1:8317" cpampVhost.extraConfig;
+assert !lib.hasInfix "127.0.0.1:18317" cliProxyApiVhost.extraConfig;
+assert !lib.hasInfix "/v0/management" cliProxyApiVhost.extraConfig;
+assert !lib.hasInfix "request_body" executorVhost.extraConfig;
+assert !lib.hasInfix "request_body" planeVhost.extraConfig;
+assert !lib.hasInfix "request_body" cliProxyApiVhost.extraConfig;
+assert !lib.hasInfix "request_body" cpampVhost.extraConfig;
+assert !lib.hasInfix "basic_auth" executorVhost.extraConfig;
+assert !lib.hasInfix "basic_auth" planeVhost.extraConfig;
+assert !lib.hasInfix "basic_auth" cliProxyApiVhost.extraConfig;
+assert !lib.hasInfix "basic_auth" cpampVhost.extraConfig;
+assert !lib.hasInfix "header_up" executorVhost.extraConfig;
+assert !lib.hasInfix "header_up" planeVhost.extraConfig;
+assert !lib.hasInfix "header_up" cliProxyApiVhost.extraConfig;
+assert !lib.hasInfix "header_up" cpampVhost.extraConfig;
+assert !lib.hasInfix "stream_timeout" executorVhost.extraConfig;
+assert !lib.hasInfix "stream_timeout" planeVhost.extraConfig;
+assert !lib.hasInfix "stream_timeout" cliProxyApiVhost.extraConfig;
+assert !lib.hasInfix "stream_timeout" cpampVhost.extraConfig;
+assert !hades.services.caddy.openFirewall;
+assert lib.all (port: !(builtins.elem port hades.networking.firewall.allowedTCPPorts)) [ 80 443 ];
+assert !(builtins.elem 443 hades.networking.firewall.allowedUDPPorts);
+assert !(hades.networking.firewall.interfaces ? tailscale0)
+  || (lib.all (port: !(builtins.elem port hades.networking.firewall.interfaces.tailscale0.allowedTCPPorts)) [ 80 443 ]
+      && !(builtins.elem 443 hades.networking.firewall.interfaces.tailscale0.allowedUDPPorts));
+assert builtins.elem "homepage.service" caddy.wants;
+assert builtins.elem "homepage.service" caddy.after;
+assert builtins.elem "executor.service" caddy.wants;
+assert builtins.elem "executor.service" caddy.after;
+assert builtins.elem "plane.service" caddy.wants;
+assert builtins.elem "plane.service" caddy.after;
+assert builtins.elem "cliproxyapi.service" caddy.wants;
+assert builtins.elem "cliproxyapi.service" caddy.after;
+assert builtins.elem "cpa-manager-plus.service" caddy.wants;
+assert builtins.elem "cpa-manager-plus.service" caddy.after;
+assert builtins.elem "tailscaled.service" caddy.after;
+assert lib.all (flag: !(lib.hasPrefix "--advertise-services" flag)) hades.services.tailscale.extraSetFlags;
+assert lib.hasInfix "service-gateway-ca-anchor" caddy.serviceConfig.ExecStartPost;
+assert builtins.elem "service-gateway-ca-fingerprint" systemPackageNames;
+assert builtins.elem "service-gateway-ca-export" systemPackageNames;
+assert builtins.elem "caddy.service" hades.dotfiles.labUpdate.requiredUnits;
+true

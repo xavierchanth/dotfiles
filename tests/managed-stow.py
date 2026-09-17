@@ -41,7 +41,7 @@ def assert_refused(callback):
 
 
 with tempfile.TemporaryDirectory() as temporary:
-    root = Path(temporary)
+    root = Path(temporary).resolve()
     home = root / 'home'
     source = root / 'source-one'
     declarations = [{'name': 'demo', 'target': '.config/demo'}]
@@ -127,7 +127,7 @@ with tempfile.TemporaryDirectory() as temporary:
 # directory before Stow runs, otherwise Stow sees its source as its target.
 for owner in ['original', 'managed']:
     with tempfile.TemporaryDirectory() as temporary:
-        root = Path(temporary)
+        root = Path(temporary).resolve()
         home = root / 'home'
         source = root / 'source'
         target = home / '.config/demo'
@@ -151,10 +151,10 @@ for owner in ['original', 'managed']:
         stow(home)
         assert not target.is_symlink()
 
-# Iris routing state is migrated before a managed source swap, then linked back
-# into each newly staged generation without changing the private files.
+# Iris config is captured from the legacy skill tree, then exposed beside
+# skills independently of source swaps and Stow directory folding.
 with tempfile.TemporaryDirectory() as temporary:
-    root = Path(temporary)
+    root = Path(temporary).resolve()
     home = root / 'home'
     initialize_checkout(home)
     declarations = [{'name': 'agents', 'target': '.agents'}]
@@ -175,17 +175,18 @@ with tempfile.TemporaryDirectory() as temporary:
     assert not (config / 'vocabulary.yaml').exists()
 
     source_two = root / 'source-two'
-    write(source_two / routing / '.gitignore', 'workspaces.yaml\nvocabulary.yaml\n')
     write(source_two / 'agents/skills/orchestration/iris/SKILL.md', 'second generation')
     module.prepare(home, source_two, declarations, [])
     stow(home, 'agents', '.agents')
     iris.prepare(home, link=True)
-    routed = config / 'vocabulary.yaml'
-    assert routed.is_symlink(), routed
-    assert routed.resolve() == state, (os.readlink(routed), routed.resolve(), state)
+    overlay = home / '.agents/config/iris'
+    assert overlay.is_symlink() and overlay.resolve() == state.parent
+    routed = overlay / 'vocabulary.yaml'
+    assert routed.is_file(), routed
+    assert routed.resolve() == state, (routed.resolve(), state)
     assert routed.read_text() == state.read_text()
-    workspaces = config / 'workspaces.yaml'
-    assert workspaces.is_symlink(), workspaces
+    workspaces = overlay / 'workspaces.yaml'
+    assert not workspaces.exists(), workspaces
     assert workspaces.resolve() == home / '.dotfiles/local/iris/workspaces.yaml'
     assert state.stat().st_mode & 0o777 == 0o600
     assert state.parent.stat().st_mode & 0o777 == 0o700
@@ -195,19 +196,18 @@ with tempfile.TemporaryDirectory() as temporary:
     iris.prepare(home, link=False)
     assert state.stat().st_mode & 0o777 == 0o600
     source_three = root / 'source-three'
-    write(source_three / routing / '.gitignore', 'workspaces.yaml\nvocabulary.yaml\n')
     write(source_three / 'agents/skills/orchestration/iris/SKILL.md', 'third generation')
     module.prepare(home, source_three, declarations, [])
     stow(home, 'agents', '.agents')
     iris.prepare(home, link=True)
-    assert routed.is_symlink(), routed
-    assert routed.resolve() == state, (os.readlink(routed), routed.resolve(), state)
+    assert overlay.is_symlink() and routed.is_file(), routed
+    assert routed.resolve() == state, (routed.resolve(), state)
     assert routed.read_text() == 'organizations:\n  durable: [durable]\n'
 
 # Existing target content can make Stow fold only the config directory. That
 # verified Stow-owned link remains safe to traverse while routing files move.
 with tempfile.TemporaryDirectory() as temporary:
-    root = Path(temporary)
+    root = Path(temporary).resolve()
     home = root / 'home'
     initialize_checkout(home)
     declarations = [{'name': 'agents', 'target': '.agents'}]
@@ -227,14 +227,14 @@ with tempfile.TemporaryDirectory() as temporary:
     assert state.read_text() == 'config link layout\n'
     stow(home, 'agents', '.agents')
     iris.prepare(home, link=True)
-    assert (config / 'vocabulary.yaml').is_symlink()
-    assert (config / 'vocabulary.yaml').resolve() == state
+    assert not (config / 'vocabulary.yaml').exists()
+    assert (home / '.agents/config/iris/vocabulary.yaml').resolve() == state
     assert (iris_target / 'user-note').read_text() == 'preserve'
 
 # A pre-existing real config directory makes Stow link individual files. Only
 # links to the exact selected Stow package path are accepted and migrated.
 with tempfile.TemporaryDirectory() as temporary:
-    root = Path(temporary)
+    root = Path(temporary).resolve()
     home = root / 'home'
     initialize_checkout(home)
     declarations = [{'name': 'agents', 'target': '.agents'}]
@@ -254,11 +254,12 @@ with tempfile.TemporaryDirectory() as temporary:
     assert state.read_text() == 'individual link layout\n'
     stow(home, 'agents', '.agents')
     iris.prepare(home, link=True)
-    assert routed.is_symlink() and routed.resolve() == state
+    assert not routed.exists()
+    assert (home / '.agents/config/iris/vocabulary.yaml').resolve() == state
 
 # Unrelated directory and file links fail closed without changing their data.
 with tempfile.TemporaryDirectory() as temporary:
-    root = Path(temporary)
+    root = Path(temporary).resolve()
     home = root / 'home'
     initialize_checkout(home)
     outside = root / 'outside'
@@ -270,7 +271,7 @@ with tempfile.TemporaryDirectory() as temporary:
     assert config.is_symlink() and (outside / 'vocabulary.yaml').read_text() == 'outside directory\n'
 
 with tempfile.TemporaryDirectory() as temporary:
-    root = Path(temporary)
+    root = Path(temporary).resolve()
     home = root / 'home'
     initialize_checkout(home)
     outside = root / 'outside.yaml'
@@ -284,7 +285,7 @@ with tempfile.TemporaryDirectory() as temporary:
 
 # Divergent copies stop migration while preserving both versions for recovery.
 with tempfile.TemporaryDirectory() as temporary:
-    root = Path(temporary)
+    root = Path(temporary).resolve()
     home = root / 'home'
     initialize_checkout(home)
     config = home / '.agents/skills/orchestration/iris/config'
@@ -295,5 +296,39 @@ with tempfile.TemporaryDirectory() as temporary:
     assert_refused(lambda: iris.prepare(home, link=False))
     assert source.read_text() == 'current config\n'
     assert destination.read_text() == 'existing local state\n'
+
+# A fresh install needs no config placeholder in the skill tree. Restowing
+# preserves the private overlay, and conflicting user content stays untouched.
+with tempfile.TemporaryDirectory() as temporary:
+    root = Path(temporary).resolve()
+    home = root / 'home'
+    initialize_checkout(home)
+    source = root / 'source'
+    write(source / 'agents/skills/orchestration/iris/SKILL.md', 'public skill')
+    declarations = [{'name': 'agents', 'target': '.agents'}]
+    iris.prepare(home, link=False)
+    module.prepare(home, source, declarations, [])
+    (home / '.agents').mkdir(parents=True, exist_ok=True)
+    stow(home, 'agents', '.agents')
+    folded = os.readlink(home / '.agents/skills')
+    iris.prepare(home, link=True)
+    overlay = home / '.agents/config/iris'
+    write(overlay / 'vocabulary.yaml', 'private alias')
+    iris.prepare(home, link=True)
+    stow(home, 'agents', '.agents')
+    assert os.readlink(home / '.agents/skills') == folded
+    assert (overlay / 'vocabulary.yaml').read_text() == 'private alias'
+    assert not (home / '.local/share/dotfiles/stow/agents/config').exists()
+    assert not (source / 'agents/skills/orchestration/iris/config').exists()
+    overlay.unlink()
+    outside = root / 'outside'
+    write(outside / 'vocabulary.yaml', 'user data')
+    overlay.symlink_to(outside)
+    assert_refused(lambda: iris.prepare(home, link=True))
+    assert (outside / 'vocabulary.yaml').read_text() == 'user data'
+    overlay.unlink()
+    write(overlay / 'vocabulary.yaml', 'occupied')
+    assert_refused(lambda: iris.prepare(home, link=True))
+    assert (overlay / 'vocabulary.yaml').read_text() == 'occupied'
 
 print('managed Stow migration tests passed')

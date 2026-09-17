@@ -1,0 +1,135 @@
+--- docker-compose.yml
++++ docker-compose.yml
+@@ -63,7 +63,7 @@
+ 
+ services:
+   web:
+-    image: makeplane/plane-frontend:${APP_RELEASE:-v1.3.1}
++    image: makeplane/plane-frontend:v1.3.1@sha256:c178fd85c4588165262cfe748bd103fdeccebbbab827c53e71b9ce32fff84f86
+     deploy:
+       replicas: ${WEB_REPLICAS:-1}
+       restart_policy:
+@@ -73,7 +73,7 @@
+       - worker
+ 
+   space:
+-    image: makeplane/plane-space:${APP_RELEASE:-v1.3.1}
++    image: makeplane/plane-space:v1.3.1@sha256:e08c2c8741ae6f81a9326dc9201e7e09c0c411b87a20198f9ea9e5cf2fae3488
+     deploy:
+       replicas: ${SPACE_REPLICAS:-1}
+       restart_policy:
+@@ -84,7 +84,7 @@
+       - web
+ 
+   admin:
+-    image: makeplane/plane-admin:${APP_RELEASE:-v1.3.1}
++    image: makeplane/plane-admin:v1.3.1@sha256:ff9219127a2c2c4a4bb066d6a0e25a5fc6a11204cf8484b521dada53d696fe43
+     deploy:
+       replicas: ${ADMIN_REPLICAS:-1}
+       restart_policy:
+@@ -94,7 +94,7 @@
+       - web
+ 
+   live:
+-    image: makeplane/plane-live:${APP_RELEASE:-v1.3.1}
++    image: makeplane/plane-live:v1.3.1@sha256:2073b6950a394545ea1db6ed4157e951ad5a6e1881e74f4f9238ace6c35bbf3d
+     environment:
+       <<: [*live-env, *redis-env]
+     deploy:
+@@ -106,7 +106,7 @@
+       - web
+ 
+   api:
+-    image: makeplane/plane-backend:${APP_RELEASE:-v1.3.1}
++    image: makeplane/plane-backend:v1.3.1@sha256:2cdcb5f778c6ccacebce0e5a751d39fac4a549a44e049a5b110a7623cfdad139
+     command: ./bin/docker-entrypoint-api.sh
+     deploy:
+       replicas: ${API_REPLICAS:-1}
+@@ -122,7 +122,7 @@
+       - plane-mq
+ 
+   worker:
+-    image: makeplane/plane-backend:${APP_RELEASE:-v1.3.1}
++    image: makeplane/plane-backend:v1.3.1@sha256:2cdcb5f778c6ccacebce0e5a751d39fac4a549a44e049a5b110a7623cfdad139
+     command: ./bin/docker-entrypoint-worker.sh
+     deploy:
+       replicas: ${WORKER_REPLICAS:-1}
+@@ -139,7 +139,7 @@
+       - plane-mq
+ 
+   beat-worker:
+-    image: makeplane/plane-backend:${APP_RELEASE:-v1.3.1}
++    image: makeplane/plane-backend:v1.3.1@sha256:2cdcb5f778c6ccacebce0e5a751d39fac4a549a44e049a5b110a7623cfdad139
+     command: ./bin/docker-entrypoint-beat.sh
+     deploy:
+       replicas: ${BEAT_WORKER_REPLICAS:-1}
+@@ -156,7 +156,7 @@
+       - plane-mq
+ 
+   migrator:
+-    image: makeplane/plane-backend:${APP_RELEASE:-v1.3.1}
++    image: makeplane/plane-backend:v1.3.1@sha256:2cdcb5f778c6ccacebce0e5a751d39fac4a549a44e049a5b110a7623cfdad139
+     command: ./bin/docker-entrypoint-migrator.sh
+     deploy:
+       replicas: 1
+@@ -172,7 +172,7 @@
+ 
+   # Comment this if you already have a database running
+   plane-db:
+-    image: postgres:15.7-alpine
++    image: postgres:15.7-alpine@sha256:468d34fefd6338031787c7b8e94078975b3aaf4d66c7ead25c39cd3ba46a15c6
+     command: postgres -c 'max_connections=1000'
+     deploy:
+       replicas: 1
+@@ -184,7 +184,7 @@
+       - pgdata:/var/lib/postgresql/data
+ 
+   plane-redis:
+-    image: valkey/valkey:7.2.11-alpine
++    image: valkey/valkey:7.2.11-alpine@sha256:10328d00120dc14fbc87b2ed61b7677ddbb0d011e705361b4788329a0ec69a93
+     deploy:
+       replicas: 1
+       restart_policy:
+@@ -193,7 +193,7 @@
+       - redisdata:/data
+ 
+   plane-mq:
+-    image: rabbitmq:3.13.6-management-alpine
++    image: rabbitmq:3.13.6-management-alpine@sha256:611107e29cce05c2acd968325d5dcbde7e2fee404970f1ead75fdb22be2821b3
+     deploy:
+       replicas: 1
+       restart_policy:
+@@ -205,7 +205,7 @@
+ 
+   # Comment this if you using any external s3 compatible storage
+   plane-minio:
+-    image: minio/minio:latest
++    image: quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z@sha256:a1ea29fa28355559ef137d71fc570e508a214ec84ff8083e39bc5428980b015e
+     command: server /export --console-address ":9090"
+     deploy:
+       replicas: 1
+@@ -218,22 +218,19 @@
+ 
+   # Comment this if you already have a reverse proxy running
+   proxy:
+-    image: makeplane/plane-proxy:${APP_RELEASE:-v1.3.1}
++    image: makeplane/plane-proxy:v1.3.1@sha256:b4f8bb6998052dcd1488171a90d473674cefbc6ec77114d5095b48c805f4ad27
+     deploy:
+       replicas: 1
+       restart_policy:
+         condition: any
+     environment:
+       <<: *proxy-env
+     ports:
+       - target: 80
++        host_ip: 127.0.0.1
+         published: ${LISTEN_HTTP_PORT:-80}
+         protocol: tcp
+         mode: host
+-      - target: 443
+-        published: ${LISTEN_HTTPS_PORT:-443}
+-        protocol: tcp
+-        mode: host
+     volumes:
+       - proxy_config:/config
+       - proxy_data:/data

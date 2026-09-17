@@ -126,7 +126,27 @@
      assert !(builtins.elem "tailscale-app" eris.homebrew.casks);
      true;
   jioValidation = import ./tests/jio.nix { inherit lib mkHome home-manager jioPackageFor pkgsFor; };
-  checked = builtins.deepSeq validKinds (assert resolverTests; assert profileTests; assert codingValidation; assert inventoryValidation; assert darwinServerValidation; true);
+  homepageValidation = import ./tests/homepage.nix { inherit mkNixos contextFor; };
+  cliproxyapiValidation = import ./tests/cliproxyapi.nix { inherit lib mkNixos contextFor; };
+  cpaManagerPlusValidation = import ./tests/cpa-manager-plus.nix { inherit lib mkNixos contextFor; };
+  serviceGatewayValidation = import ./tests/service-gateway.nix { inherit lib mkNixos contextFor; };
+  executorValidation = let
+    hades = (mkNixos "hades").config;
+    executor = hades.dotfiles.executor;
+  in assert executor.image == "ghcr.io/usefulsoftwareco/executor-selfhost:v1.6.8@sha256:527e014ce0641e9d569314561fba2a37b872ffd5074471b9bc48b66611ecb090";
+     assert executor.bind == "127.0.0.1:4788";
+     assert executor.webBaseUrl == "https://executor.lab.xavierchanth.xyz";
+     assert executor.dataDirectory == "/var/lib/executor/data";
+     assert executor.healthUrl == "http://127.0.0.1:4788/api/health";
+     assert !executor.allowLocalNetwork && !executor.allowStdioMcp;
+     assert builtins.elem "executor.service" hades.dotfiles.labUpdate.requiredUnits;
+     assert !executor.offsiteBackup.enable;
+     assert !(builtins.elem "executor-backup-preflight.service" hades.systemd.services.executor.requires);
+     assert !(hades.systemd.services ? executor-restore-check);
+     assert !(hades.systemd.services ? executor-offsite-backup);
+     assert hades.systemd.timers.executor-backup.timerConfig.Unit == "executor-backup.service";
+     true;
+  checked = builtins.deepSeq validKinds (assert resolverTests; assert profileTests; assert codingValidation; assert inventoryValidation; assert darwinServerValidation; assert homepageValidation; assert cliproxyapiValidation; assert cpaManagerPlusValidation; assert serviceGatewayValidation; assert executorValidation; true);
   systems = [ "aarch64-darwin" "aarch64-linux" "x86_64-linux" ];
   deployNodes = attrs deployNames (name: let
     host = inventory.${name};
@@ -237,6 +257,22 @@ in builtins.seq checked (builtins.seq deployValidation {
       } ''
         python3 ${../tests/nix-with-github.py}
         touch "$out"
+      '';
+
+      service-gateway = assert serviceGatewayValidation; pkgs.runCommand "service-gateway-tests" { } ''
+        echo 'service gateway eval assertions passed' > $out
+      '';
+
+      homepage = assert homepageValidation; pkgs.runCommand "homepage-tests" { } ''
+        echo 'homepage eval assertions passed' > $out
+      '';
+
+      cliproxyapi = assert cliproxyapiValidation; pkgs.runCommand "cliproxyapi-tests" { } ''
+        echo 'CLIProxyAPI eval assertions passed' > $out
+      '';
+
+      cpa-manager-plus = assert cpaManagerPlusValidation; pkgs.runCommand "cpa-manager-plus-tests" { } ''
+        echo 'CPA Manager Plus eval assertions passed' > $out
       '';
 
       cage-mcp-protocol = pkgs.runCommand "cage-mcp-protocol-tests" {

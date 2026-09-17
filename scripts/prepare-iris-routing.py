@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Keep Iris routing files in checkout-local state across Stow generations."""
+"""Expose checkout-private Iris config independently of Stow generations."""
 
 import argparse
 import os
@@ -128,25 +128,37 @@ def migrate_file(source, destination, stow_configs):
 def prepare(home, *, link, git='git'):
     home = lexical(home)
     state = state_directory(home, git)
-    config = home / '.agents/skills/orchestration/iris/config'
+    # The overlay is a sibling of skills, so even a folded skills symlink is
+    # left intact and no private links are written into a Stow source tree.
+    overlay = home / '.agents/config/iris'
+    for parent in (home / '.agents', overlay.parent):
+        if parent.is_symlink() or (parent.exists() and not parent.is_dir()):
+            raise RuntimeError(f'refusing redirected Iris config parent: {parent}')
+    if overlay.is_symlink():
+        if link_destination(overlay) != state:
+            raise RuntimeError(f'refusing unrelated Iris config link: {overlay}')
+    elif overlay.exists():
+        raise RuntimeError(f'refusing occupied Iris config path: {overlay}')
+
+    # Capture files from the previous, skill-local layout before Stow swaps
+    # its source. The old directory need not exist in the next generation.
+    config = home / '.agents' / ROUTING_CONFIG
     stow_configs = stow_config_directories(home)
     validate_config_path(config, stow_configs)
     for name in ROUTING_FILES:
         migrate_file(config / name, state / name, stow_configs)
+        if (config / name).is_symlink():
+            (config / name).unlink()
+        destination = state / name
+        if destination.is_symlink() or (destination.exists() and not destination.is_file()):
+            raise RuntimeError(f'refusing invalid Iris state destination: {destination}')
+        if destination.exists():
+            destination.chmod(0o600)
     if not link:
         return
-    if not config.is_dir():
-        raise RuntimeError(f'missing Iris config directory after Stow activation: {config}')
-    for name in ROUTING_FILES:
-        source = config / name
-        destination = state / name
-        if source.is_symlink():
-            if link_destination(source) != destination:
-                raise RuntimeError(f'refusing unrelated Iris routing link: {source}')
-            continue
-        if source.exists():
-            raise RuntimeError(f'refusing occupied Iris routing path: {source}')
-        source.symlink_to(destination)
+    overlay.parent.mkdir(parents=True, exist_ok=True)
+    if not overlay.is_symlink():
+        overlay.symlink_to(state, target_is_directory=True)
 
 
 def main():
