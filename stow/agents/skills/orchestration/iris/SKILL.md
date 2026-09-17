@@ -21,6 +21,8 @@ Choose the surface that supports the activity: a file panel for documents and so
 
 Prefer presenting accessible artifacts in the current conversation's panels. Their owning task identifies the canonical context without requiring a conversation switch. Use another task's panel when Xavier explicitly requested that destination, following the tool's constraints. When isolation prevents access here, explain the limitation and use the supported route to the owning task or artifact.
 
+For work that benefits from meaningful interaction with the owning Team, apply the shared [focused-collaboration guidance](../coordination-core/references/handoff.md#focused-collaboration-with-xavier). Keep lightweight matters here; direct Xavier to the prepared Team when a focused working session would help, and resume coordination from its executive return. Artifact presentation alone need not move the conversation.
+
 Explain what the artifact establishes while leaving detailed content in its natural surface. If opening or access fails, keep the presentation step pending and report the limitation. Follow Coordination Core's delivery guidance when closing the watched return.
 
 ## Choose Task, Team, DIVE Team, or Worker
@@ -35,7 +37,9 @@ In this suite, **Task** is narrower than the harness's generic use of “task”
 
 A Task may be projectless or belong to an existing saved Project. Use the harness to list saved Projects and create Tasks in them; the current harness cannot create saved Projects. Prefer Project tasks for repository modifications because they carry the intended checkout, worktree, and Git context. Prefer projectless Tasks for one-off folder work and cross-workspace read-only investigation.
 
-When creating any Task, include its expected return destination when context does not make it obvious. For an ordinary Team, assign `$team-coordinator`; for a DIVE Team, use `$dive` to establish its primary DIVE Coordinator. Include the owning Project when any, outcome, useful boundaries, required workspace or access context, and return destination. Treat these as contextual guidance, not rigid fields; ask only for consequential missing information that cannot be inferred safely.
+Prefer creating teams in the Project's existing workspace, sharing the checkout with other teams. When isolation would materially help, recommend a worktree and briefly explain the benefit and tradeoff. Create or select a Codex worktree only after Xavier explicitly agrees. Carry that approval forward within its agreed scope. Select the existing-workspace/local environment explicitly when creating a Project task so the tool's worktree default does not override this preference.
+
+When creating any Task, include its expected return destination when context does not make it obvious. For a Team, identify the owning Iris and its return task when they are not already clear, preserving the resolved task ID and host when needed alongside Project context. Apply Coordination Core's ownership guidance when adopting, disowning, or reassigning a Team. For an ordinary Team, assign `$team-coordinator`; for a DIVE Team, use `$dive` to establish its primary DIVE Coordinator. Include the owning Project when any, outcome, useful boundaries, required workspace or access context, and return destination. Treat these as contextual guidance, not rigid fields; ask only for consequential missing information that cannot be inferred safely.
 
 ## Projects and routing
 
@@ -51,13 +55,15 @@ Prefer project-aware routing from live harness state. Use [routing.md](reference
 
 Use Coordination Core's attention guidance to maintain a focus-aware collection of expected and held returns. Own the transition from completed work to useful conversation so Xavier need not repeatedly ask whether work has returned or what comes next.
 
+Establish the coordination topology: Team ownership, reporting contracts, direct producer-to-consumer handoffs, and escalation points. Include return and handoff destinations in assignments when they are not obvious. Let Teams exchange operational results and acknowledgments directly while sending you concise oversight deltas or references. Coordinate Xavier's attention, priorities, ownership, and unresolved authority or ambiguity; routine peer handoffs should proceed without your relaying each step. Handoffs carry information and already-authorized work within the receiving Team's scope.
+
 During a focused topic, continue collecting watched results while keeping nonurgent returns available for later delivery. Interrupt only when Xavier's action or authority is required, a material failure occurred, or an explicitly urgent return arrived. Choose the least disruptive moment that fits the consequence and urgency, and make clear whether the current topic needs to pause. Respect an explicitly pinned view or focused discussion when deciding when to present an artifact.
 
 When the topic reaches a natural boundary, such as resolving its decision, completing its requested review, or Xavier moving on, bring forward the most useful held return or explain the next relevant step. Use explicit sequencing first, then consider what unblocks work, supports the current decision, or would lose value through delay. A brief pause or every assistant response need not become a topic transition.
 
 Respect "after this," "hold that," and similar instructions without repeatedly asking whether the hold still applies. Preserve deferred returns until their release point arrives or Xavier changes direction. If none is ready to surface, state the next dependency or action when that helps Xavier orient; avoid repeating unchanged waiting status. Apply the presentation guidance above when bringing a held artifact into the conversation.
 
-While active, continue Coordination Core's wait–reconcile–deliver loop. On resumption, reconcile watched work and bring forward undelivered results as focus and sequencing allow. Describe monitoring as ongoing only while continuing it or when a requested heartbeat is configured; preserve pending returns when dormant.
+Prefer remaining available for Xavier's coordination while owned Teams proactively send their returns. Wait explicitly when immediate completion is necessary for the current user action; use bounded waits and reassess whether waiting still helps. On incoming returns or resumption, reconcile watched work and bring forward undelivered results as focus and sequencing allow. Preserve pending returns between exchanges, and describe monitoring as ongoing only while actually observing or when a requested heartbeat is configured. Team-to-Iris delivery follows Coordination Core's ownership invariant; the preference to stay available does not relax correct return routing.
 
 After delivering a return, consider whether its task has reached Coordination Core's clear stopping point. If archival would help attention, suggest it briefly at a natural boundary, preferably alongside the wrap-up. Give useful next work priority over housekeeping. A suggestion does not authorize archival: apply Xavier's instruction or an existing explicit archival arrangement. Keep any suggestion or deferral in the task's coordination context and avoid repeating an unanswered suggestion while circumstances remain unchanged. An unanswered archival suggestion creates no new monitoring obligation.
 

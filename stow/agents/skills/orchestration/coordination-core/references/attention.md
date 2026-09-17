@@ -27,40 +27,45 @@ establish delivery. Preserve unresolved access and explicitly held
 presentation as pending or deferred. Record an explicit cancellation when
 Xavier withdraws the assignment.
 
-While active, continue useful independent work and wait on outstanding
-watched returns using the appropriate harness mechanisms for durable
-Codex tasks or temporary subagents. Prefer bounded event waits and
-returned cursors over repeated inspection. Keep waits within tool limits
-and short enough to remain responsive to Xavier and meet applicable
-communication requirements.
+For established dependencies, prefer direct producer-to-consumer pushes
+under the [handoff guidance](handoff.md). Use pull/status inspection mainly
+for reconciliation, recovery, or an immediate synchronous dependency.
+For owned Teams, use proactive oversight returns under the
+[ownership guidance](assignment-and-return.md#team-ownership-and-return-routing)
+as the normal delivery path. Prefer keeping Iris available for Xavier's
+coordination rather than synchronously waiting for a Team. Continue useful
+independent work or end the current exchange with pending returns preserved.
+An outstanding return alone does not require keeping Iris's turn open.
 
-After each wait, reconcile changed work, assess incoming results, and
-address blockers or decisions within your scope. Deliver useful returns
-as focus and explicit sequencing allow. Keep nonurgent results awaiting
-delivery when the current conversation is focused elsewhere. Continue
-the loop when a return remains outstanding and waiting or acting can
-usefully advance it. A normal timeout alone is not a reason to end the turn.
+When immediate completion is needed for the current user action, Iris may
+explicitly wait using the appropriate harness mechanism. Prefer bounded
+event waits and returned cursors over repeated inspection. Reassess after
+a timeout; continue when another bounded wait would help the immediate
+action, or preserve the pending return and resume coordination. Coordinators
+may also wait for temporary subagents when their current work depends on
+those results. Keep waits within tool limits and remain responsive to Xavier.
 
-Before ending a turn, reconcile outstanding watched returns. Continue
-the loop unless there is a concrete reason to stop active monitoring:
-Xavier has asked you to stop or defer it; progress requires user input,
-access, or capabilities you lack; or available evidence shows that
-further waiting cannot usefully advance the work. Explain what remains
-pending, why monitoring is stopping, and what would resume it. Preserve
-the unresolved return without presenting it as complete.
+On incoming messages or a relevant inspection, reconcile changed work,
+assess the evidence, and address blockers or decisions within your scope.
+Surface urgent authority requests and material failures promptly. Keep
+nonurgent results available for delivery at a natural boundary, honoring
+explicit sequencing and deferral. Receiving a Team's return and delivering
+it to Xavier are distinct steps.
 
-For long-running work with no useful near-term action, propose a suitable
-deferral or monitoring arrangement. Base that proposal on the work's
-state and expected next event. Avoid repeating waits indefinitely when
-a decision, intervention, or later check would be more useful.
+Before ending an exchange, preserve unresolved and held returns with their
+current owner, recipient, and next dependency. Explain what remains pending
+when it helps Xavier orient. When the harness cannot deliver proactive
+returns, state that limitation and propose a suitable check or monitoring
+arrangement; waiting is a fallback, not a substitute for correct return routing.
 
 ## Steering and recovery
 
 Respond promptly to Xavier's new input. Preserve watched returns while
 answering questions or incorporating changes, and apply explicit stops,
 cancellations, and deferrals. Treat a status question or brief
-interruption as steering rather than cancellation. Resume the loop when
-the current interaction allows it.
+interruption as steering rather than cancellation. Resume assessment and
+delivery when the current interaction allows it; resume a wait only when
+the immediate dependency still warrants it.
 
 Before a user-facing update, reconcile watched work when doing so may
 change the answer. After interruption or compaction, recover watched
