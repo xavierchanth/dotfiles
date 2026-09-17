@@ -1,7 +1,10 @@
-{ config, lib, pkgs, ... }:
+{ config, pkgs, ... }:
 let
   release = "v1.3.1";
   hostname = "plane.lab.xavierchanth.xyz";
+  upstream = "http://127.0.0.1:8080";
+  healthPath = "/";
+  uploadLimitBytes = "10485760";
   stateDirectory = "/var/lib/plane";
   backupDirectory = "/var/backups/plane";
   environmentFile = "${stateDirectory}/plane.env";
@@ -20,7 +23,12 @@ let
       echo "Plane compose file contains an image without an immutable digest" >&2
       exit 1
     fi
+    test "$(grep -Ec '^[[:space:]]+image:' "$out")" -eq 13
+    for service in web space admin live api worker beat-worker migrator plane-db plane-redis plane-mq plane-minio proxy; do
+      grep -Eq "^  $service:" "$out"
+    done
     test "$(grep -c 'host_ip: 127.0.0.1' "$out")" -eq 1
+    test "$(grep -Ec '^[[:space:]]+published:' "$out")" -eq 1
   '';
   compose = "${pkgs.docker-compose}/bin/docker-compose --project-name plane --env-file ${environmentFile} --file ${composePath}";
   prepare = pkgs.writeShellApplication {
@@ -73,7 +81,7 @@ let
           "AWS_SECRET_ACCESS_KEY=$minio_secret_key" \
           'AWS_S3_ENDPOINT_URL=http://plane-minio:9000' \
           'AWS_S3_BUCKET_NAME=uploads' \
-          'FILE_SIZE_LIMIT=10485760' \
+          'FILE_SIZE_LIMIT=${uploadLimitBytes}' \
           'MINIO_ENDPOINT_SSL=0' \
           'API_KEY_RATE_LIMIT=60/minute' \
           "LIVE_SERVER_SECRET_KEY=$live_secret_key" \
@@ -107,6 +115,12 @@ let
       install -m 0644 ${composePath} "$temporary/docker-compose.yml"
       ${compose} images > "$temporary/images.txt"
       printf '%s\n' '${release}' > "$temporary/release.txt"
+      gzip -t "$temporary/postgres.sql.gz"
+      tar -tzf "$temporary/uploads.tar.gz" >/dev/null
+      (
+        cd "$temporary"
+        sha256sum postgres.sql.gz uploads.tar.gz plane.env docker-compose.yml images.txt release.txt > SHA256SUMS
+      )
       mv "$temporary" "$destination"
       trap - EXIT
 
@@ -143,7 +157,8 @@ in
       ExecStartPost = pkgs.writeShellScript "plane-wait-healthy" ''
         set -eu
         for attempt in $(${pkgs.coreutils}/bin/seq 1 120); do
-          if ${pkgs.curl}/bin/curl --fail --silent --show-error --max-time 5 http://127.0.0.1:8080/ >/dev/null; then
+          status="$(${pkgs.curl}/bin/curl --silent --show-error --max-time 5 --output /dev/null --write-out '%{http_code}' --header 'Host: ${hostname}' ${upstream}${healthPath} || true)"
+          if [ "$status" = 200 ]; then
             exit 0
           fi
           ${pkgs.coreutils}/bin/sleep 5

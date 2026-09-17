@@ -126,6 +126,7 @@
      assert !(builtins.elem "tailscale-app" eris.homebrew.casks);
      true;
   jioValidation = import ./tests/jio.nix { inherit lib mkHome home-manager jioPackageFor pkgsFor; };
+  homepageValidation = import ./tests/homepage.nix { inherit mkNixos contextFor; };
   serviceGatewayValidation = import ./tests/service-gateway.nix { inherit lib mkNixos contextFor; };
   executorValidation = let
     hades = (mkNixos "hades").config;
@@ -143,7 +144,7 @@
      assert !(hades.systemd.services ? executor-offsite-backup);
      assert hades.systemd.timers.executor-backup.timerConfig.Unit == "executor-backup.service";
      true;
-  checked = builtins.deepSeq validKinds (assert resolverTests; assert profileTests; assert codingValidation; assert inventoryValidation; assert darwinServerValidation; assert serviceGatewayValidation; assert executorValidation; true);
+  checked = builtins.deepSeq validKinds (assert resolverTests; assert profileTests; assert codingValidation; assert inventoryValidation; assert darwinServerValidation; assert homepageValidation; assert serviceGatewayValidation; assert executorValidation; true);
   systems = [ "aarch64-darwin" "aarch64-linux" "x86_64-linux" ];
   deployNodes = attrs deployNames (name: let
     host = inventory.${name};
@@ -258,6 +259,10 @@ in builtins.seq checked (builtins.seq deployValidation {
 
       service-gateway = assert serviceGatewayValidation; pkgs.runCommand "service-gateway-tests" { } ''
         echo 'service gateway eval assertions passed' > $out
+      '';
+
+      homepage = assert homepageValidation; pkgs.runCommand "homepage-tests" { } ''
+        echo 'homepage eval assertions passed' > $out
       '';
 
       cage-mcp-protocol = pkgs.runCommand "cage-mcp-protocol-tests" {

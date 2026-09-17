@@ -1,83 +1,167 @@
 # Service gateway
 
-Hades is the Lab's stable HTTPS service gateway. Caddy exposes named service
-origins only to the tailnet and proxies each complete origin to an HTTP listener
-on loopback. The first route is:
+Hades owns the local half of the Lab's stable HTTPS ingress. Caddy accepts TLS
+only on `127.0.0.1:8443`; the later Tailscale Service activation forwards raw
+TCP from `svc:lab` port 443 to that loopback listener. Caddy therefore receives
+the original TLS ClientHello, selects a certificate and route by SNI, and keeps
+its private CA keys on Hades.
 
 | Stable origin | Upstream | Health path | Application owner |
 | --- | --- | --- | --- |
+| `https://lab.xavierchanth.xyz` | `http://127.0.0.1:3000` | `/api/healthcheck` | Homepage |
 | `https://executor.lab.xavierchanth.xyz` | `http://127.0.0.1:4788` | `/api/health` | Executor |
+| `https://plane.lab.xavierchanth.xyz` | `http://127.0.0.1:8080` | `/` | Plane |
 
 The reusable `service-gateway` group requires the `tailscale` group. Its typed
 `dotfiles.serviceGateway.routes` option accepts only IPv4 or IPv6 loopback
-upstreams, a valid TCP port, an absolute health path, and an optional existing
-systemd unit for startup ordering. Hades is the only host that selects the
-group. Agent Services can add its route after its unit name and service contract
-are settled; Cage and stdio transports are not direct gateway routes.
+upstreams, a valid TCP port, an absolute health path, and an optional systemd
+unit for startup ordering. The gateway contract also publishes an unadvertised
+Tailscale Services configuration at
+`dotfiles.serviceGateway.tailscaleService.configFile`:
 
-## Stable-service contract
-
-The gateway owns the stable hostname, tailnet-only ingress, TLS termination,
-active upstream health checks, and transparent whole-origin proxy behavior. It
-does not rewrite paths, impose a request-body cap, strip application headers, or
-add a second authentication layer. Responses are unbuffered so SSE and other
-long-lived streams are delivered immediately, and no short stream timeout is
-configured.
-
-The application behind a route owns authentication, authorization, session and
-token lifecycle, API compatibility, and the semantics of its health endpoint.
-For the first route, Executor remains the sole owner of those concerns. A new
-stable route requires an explicit application owner and a documented health
-contract before it is added to this module.
-
-## Internal CA bootstrap
-
-This slice uses Caddy's internal CA. Every tailnet client must trust the public
-root certificate before browsers and API clients will accept the service
-certificate. After the first successful Caddy start, copy only this public file
-from Hades:
-
-```text
-/var/lib/caddy/.local/share/caddy/pki/authorities/local/root.crt
+```json
+{
+  "version": "0.0.1",
+  "services": {
+    "svc:lab": {
+      "advertised": false,
+      "endpoints": {
+        "tcp:443": "tcp://127.0.0.1:8443"
+      }
+    }
+  }
+}
 ```
 
-Install it in the operating-system trust store and, where applicable, the
-browser's independent trust store. Never copy Caddy's private CA key. Replacing
-or deleting `/var/lib/caddy` rotates trust and requires redistributing the new
-root certificate. Migration to publicly trusted or tailnet-issued certificates
-is a separate gateway change.
+Generating this file is A0 preparation. Applying it, advertising or approving
+the service, assigning DNS, and deploying the host are separate authorized
+steps.
+
+## Ingress invariants
+
+- Caddy binds only `127.0.0.1:8443`; the NixOS firewall opens no TCP 80, TCP
+  443, or UDP 443 path.
+- Automatic HTTP redirects are disabled, so Caddy does not create an HTTP
+  listener. HTTP/3 is disabled by allowing only HTTP/1.1 and HTTP/2.
+- Strict SNI host checking is enabled and there is no catch-all virtual host.
+  Unknown or missing SNI fails during TLS rather than reaching an application.
+- Every named origin is proxied without path rewriting or a second
+  authentication layer. Responses are unbuffered for SSE and other long-lived
+  streams.
+- Plane's application proxy retains ownership of its 10 MiB request-body limit
+  and WebSocket application routing; Caddy adds neither a second size limit nor
+  path-specific rewrites.
+- Caddy owns TLS and uses its internal CA. Tailscale performs raw TCP
+  forwarding and does not terminate TLS.
+
+The gateway owns stable hostnames, TLS termination, route health checks, and
+whole-origin proxy behavior. Each application owns authentication,
+authorization, session lifecycle, API compatibility, and the semantics of its
+health endpoint.
+
+## Phase 0 observations
+
+On 2026-09-16, Hades, Poseidon, and Zeus were running Tailscale 1.102.3. Hades
+reported no local `svc:lab` configuration (`tailscale serve get-config` returned
+`{}`), no advertised services, and no Serve listener. `caddy.service` and
+`executor.service` were inactive and no process was listening on ports 80, 443,
+or 8443. Poseidon independently had an existing node-scoped HTTPS Serve rule on
+port 443; it is outside this gateway contract.
+
+The admin policy page required a fresh interactive login, so the tailnet's
+service resource, tag ownership, grants, and auto-approval rules remain an A1
+console verification. A Tailscale Service host must use a tag identity; Hades
+currently has a user-owned node identity and advertises no tags.
+
+## Internal CA bootstrap and recovery
+
+Caddy persists its CA under `/var/lib/caddy`. After startup, the gateway anchors
+the SHA-256 digest of the generated public root at:
+
+```text
+/var/lib/caddy/.dotfiles-root-ca.sha256
+```
+
+Every subsequent Caddy start compares the current root with that anchor and
+fails the unit if the CA changed unexpectedly. Inspect the current fingerprint
+with `service-gateway-ca-fingerprint`. Export only the verified public root with:
+
+```sh
+sudo -u caddy service-gateway-ca-export ./hades-caddy-root.pem
+```
+
+The export refuses to overwrite a different certificate. Compare its printed
+fingerprint over the authenticated Tailscale SSH channel before pinning the PEM
+in Dotfiles. Never copy the sibling `root.key`; private CA material remains only
+on Hades.
+
+Back up and restore all of `/var/lib/caddy` as one unit. A valid recovery keeps
+the root certificate, private key, and `.dotfiles-root-ca.sha256` together. A
+missing or mismatched member is a stopped gateway, not an implicit CA rotation.
+Intentional CA rotation requires an explicit trust rollout to every managed
+client before the old root is retired.
 
 ## Validation
 
-Before deployment, evaluate the focused flake assertions and the Hades system:
+Before deployment, build the focused assertions and the Hades system:
 
 ```sh
-nix build --no-link --no-update-lock-file .#checks.x86_64-linux.service-gateway
-nix eval --raw --no-update-lock-file .#nixosConfigurations.hades.config.system.build.toplevel.drvPath
+nix build --no-link --no-write-lock-file path:.#checks.x86_64-linux.service-gateway
+nix build --no-link --no-write-lock-file path:.#nixosConfigurations.hades.config.system.build.toplevel
 ```
 
-After deployment, verify the service, interface-scoped firewall, active route,
-and streaming origin from a tailnet client:
+After an authorized A1 activation, verify the local applications and Caddy
+before advertising the service:
 
 ```sh
-sudo systemctl is-active tailscaled.service executor.service caddy.service
-sudo nft list ruleset | grep -C3 -E 'tailscale0|dport (80|443)'
-curl --fail --cacert ./root.crt https://executor.lab.xavierchanth.xyz/api/health
-curl --fail --cacert ./root.crt -I https://executor.lab.xavierchanth.xyz/
-sudo journalctl -u caddy.service --since today --no-pager
+curl --fail http://127.0.0.1:3000/api/healthcheck
+curl --fail http://127.0.0.1:4788/api/health
+curl --fail --header 'Host: plane.lab.xavierchanth.xyz' http://127.0.0.1:8080/
+sudo systemctl is-active tailscaled.service homepage.service executor.service plane.service caddy.service
+sudo ss -ltnp | grep '127.0.0.1:8443'
+curl --fail --resolve lab.xavierchanth.xyz:8443:127.0.0.1 \
+  --cacert ./hades-caddy-root.pem https://lab.xavierchanth.xyz:8443/
 ```
 
-Confirm TCP 80 and TCP/UDP 443 are accepted only on `tailscale0`; the global
-firewall remains closed for those ports. Then verify owner login and a harmless
-read-only MCP call through the stable origin. The health path establishes
-readiness, while the application checks establish authentication and protocol
-correctness.
+Confirm there are no listeners on host ports 80 or 443 and that an unknown SNI
+name fails the TLS handshake. Then apply the generated Tailscale configuration,
+verify it, and request service-host approval as separate A1 actions.
 
-## Rollback
+## Remaining rollout
 
-Roll back to the previous NixOS generation and confirm `caddy.service` plus the
-previous application units are active. Gateway rollback does not change
-Executor's durable state. If the route is intentionally removed, remove its DNS
-record or stop advertising it at the same time so clients do not retain a dead
-stable contract. Preserve `/var/lib/caddy` during ordinary rollback so the
-internal CA identity and installed client trust remain valid.
+### A1: tailnet service and origin
+
+1. Verify or create the `svc:lab` resource with interface `tcp:443` and a
+   tag-owned Hades identity in the Tailscale admin console.
+2. Review grants and the service auto-approver; approve the Hades advertisement
+   only after the loopback gateway checks pass.
+3. Apply the generated service configuration, advertise Hades, record the
+   TailVIP, and verify raw TCP reaches `127.0.0.1:8443`.
+4. Point the Namecheap A records for `lab.xavierchanth.xyz` and
+   `*.lab.xavierchanth.xyz` at that TailVIP.
+
+### A2: client trust
+
+1. Export the authenticated public root and compare its SHA-256 fingerprint.
+2. Pin the PEM in Dotfiles and install it declaratively in managed NixOS and
+   macOS system trust stores. Rebuilds must use the pinned PEM and never fetch a
+   trust root dynamically.
+3. Verify Safari and Chromium system trust, configure Firefox enterprise-root
+   import where needed, and install the iOS profile followed by the manual full
+   trust toggle.
+4. Test Homepage, Executor, and Plane from each intended client through the stable
+   hostnames.
+
+## Rollback contract
+
+Before service advertisement, rollback is simply the previous NixOS generation;
+no client-visible gateway exists. After advertisement, drain `svc:lab` on Hades
+first so it accepts no new connections, then roll Hades back and verify the
+previous units. Keep the service resource and DNS records while a known-good
+host will resume the same contract; otherwise remove the DNS records and clear
+the service advertisement together to avoid a dead stable origin.
+
+Ordinary rollback preserves `/var/lib/caddy`, including the root key and
+fingerprint anchor. It never deletes or regenerates CA state. If restored CA
+state fails the anchor check, keep the gateway drained until the original state
+is recovered or an intentional client-trust rotation is completed.
