@@ -40,4 +40,13 @@
     ];
     upstreamUnit = "cliproxyapi.service";
   };
+
+  dotfiles.serviceGateway.routes."cpamp.lab.xavierchanth.xyz" = {
+    upstream = {
+      address = "127.0.0.1";
+      port = 18317;
+    };
+    healthPath = "/health";
+    upstreamUnit = "cpa-manager-plus.service";
+  };
 }

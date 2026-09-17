@@ -12,6 +12,7 @@ its private CA keys on Hades.
 | `https://executor.lab.xavierchanth.xyz` | `http://127.0.0.1:4788` | `/api/health` | Executor |
 | `https://plane.lab.xavierchanth.xyz` | `http://127.0.0.1:8080` | `/` | Plane |
 | `https://cliproxyapi.lab.xavierchanth.xyz` | `http://127.0.0.1:8317` | `/healthz` | CLIProxyAPI |
+| `https://cpamp.lab.xavierchanth.xyz` | `http://127.0.0.1:18317` | `/health` | CPA Manager Plus |
 
 The reusable `service-gateway` group requires the `tailscale` group. Its typed
 `dotfiles.serviceGateway.routes` option accepts only IPv4 or IPv6 loopback
@@ -55,6 +56,11 @@ steps.
   404 at Caddy. The root, `/healthz`, management UI and API, plugin management
   resources, and provider authentication callbacks therefore remain accessible only
   through CLIProxyAPI's loopback listener on Hades.
+- CPA Manager Plus has the separate `cpamp.lab.xavierchanth.xyz` administrative
+  origin. Caddy proxies that complete origin to the loopback Manager Server so
+  its embedded UI, login, analytics, and authenticated management API remain
+  coherent. CPAMP reaches CLIProxyAPI's management API directly over Hades
+  loopback; it never uses the inference origin as an administrative hop.
 - Plane's application proxy retains ownership of its 10 MiB request-body limit
   and WebSocket application routing; Caddy adds neither a second size limit nor
   path-specific rewrites.
@@ -125,7 +131,8 @@ curl --fail http://127.0.0.1:3000/api/healthcheck
 curl --fail http://127.0.0.1:4788/api/health
 curl --fail --header 'Host: plane.lab.xavierchanth.xyz' http://127.0.0.1:8080/
 curl --fail http://127.0.0.1:8317/healthz
-sudo systemctl is-active tailscaled.service homepage.service executor.service plane.service cliproxyapi.service caddy.service
+curl --fail http://127.0.0.1:18317/health
+sudo systemctl is-active tailscaled.service homepage.service executor.service plane.service cliproxyapi.service cpa-manager-plus.service caddy.service
 sudo ss -ltnp | grep '127.0.0.1:8443'
 curl --fail --resolve lab.xavierchanth.xyz:8443:127.0.0.1 \
   --cacert ./hades-caddy-root.pem https://lab.xavierchanth.xyz:8443/
@@ -135,6 +142,8 @@ for path in / /healthz /management.html /v0/management /anthropic/callback /code
     --cacert ./hades-caddy-root.pem \
     "https://cliproxyapi.lab.xavierchanth.xyz:8443$path")" = 404
 done
+curl --fail --resolve cpamp.lab.xavierchanth.xyz:8443:127.0.0.1 \
+  --cacert ./hades-caddy-root.pem https://cpamp.lab.xavierchanth.xyz:8443/health
 ```
 
 Confirm there are no listeners on host ports 80 or 443 and that an unknown SNI
