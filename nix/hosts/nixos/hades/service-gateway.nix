@@ -26,4 +26,18 @@
     healthPath = "/";
     upstreamUnit = "plane.service";
   };
+
+  dotfiles.serviceGateway.routes."cliproxyapi.lab.xavierchanth.xyz" = {
+    upstream = {
+      address = "127.0.0.1";
+      port = 8317;
+    };
+    healthPath = "/healthz";
+    allowedPaths = [
+      "/v1/models"
+      "/v1/responses"
+      "/v1/responses/compact"
+    ];
+    upstreamUnit = "cliproxyapi.service";
+  };
 }

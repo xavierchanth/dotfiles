@@ -8,6 +8,11 @@ let
     in "http://${address}:${toString route.upstream.port}";
   upstreamUnits = lib.unique (lib.filter (unit: unit != null)
     (map (name: cfg.routes.${name}.upstreamUnit) routeNames));
+  proxyTarget = route:
+    lib.optionalString (route.allowedPaths != [ ]) "@dataPlane " + upstreamUrl route;
+  allowedPathConfig = route: lib.optionalString (route.allowedPaths != [ ]) ''
+    @dataPlane path ${lib.concatStringsSep " " route.allowedPaths}
+  '';
   validHostname = hostname:
     builtins.match "^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$" hostname != null
     && builtins.match ".*\\.\\..*" hostname == null;
@@ -170,6 +175,11 @@ in
             type = types.strMatching "^/[^[:space:]]*$";
             description = "Unauthenticated HTTP path used for active upstream health checks.";
           };
+          allowedPaths = mkOption {
+            type = types.listOf (types.strMatching "^/[^[:space:]]*$");
+            default = [ ];
+            description = "Optional fail-closed path allowlist proxied without rewriting; an empty list proxies the whole origin.";
+          };
           upstreamUnit = mkOption {
             type = types.nullOr (types.strMatching "^[A-Za-z0-9@_.:-]+\\.service$");
             default = null;
@@ -211,13 +221,15 @@ in
         listenAddresses = [ cfg.bindAddress ];
         extraConfig = ''
           tls internal
-          reverse_proxy ${upstreamUrl route} {
+          ${allowedPathConfig route}
+          reverse_proxy ${proxyTarget route} {
             health_uri ${route.healthPath}
             health_interval 10s
             health_timeout 3s
             health_status 2xx
             flush_interval -1
           }
+          ${lib.optionalString (route.allowedPaths != [ ]) "respond 404"}
         '';
       }) cfg.routes;
     };
