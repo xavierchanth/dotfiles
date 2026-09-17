@@ -113,6 +113,11 @@ let
           '  enabled: false' \
           'plugins:' \
           '  enabled: false' \
+          'routing:' \
+          '  strategy: "${cfg.routingStrategy}"' \
+          '  session-affinity: ${lib.boolToString cfg.sessionAffinity}' \
+          '  session-affinity-ttl: "${cfg.sessionAffinityTtl}"' \
+          '  session-affinity-subagents: true' \
           'ws-auth: true' \
           'streaming:' \
           '  keepalive-seconds: 15' \
@@ -204,6 +209,70 @@ let
       esac
     '';
   };
+  accountControl = pkgs.writeShellApplication {
+    name = "cliproxyapi-account";
+    runtimeInputs = [ pkgs.coreutils pkgs.curl pkgs.gnugrep pkgs.jq ];
+    text = ''
+      set -euo pipefail
+      umask 077
+      if [ "$(id -u)" -ne 0 ]; then
+        echo 'cliproxyapi-account must run as root' >&2
+        exit 1
+      fi
+      if [ "$#" -lt 1 ]; then
+        echo 'usage: cliproxyapi-account status | enable FILE | disable FILE | priority FILE INTEGER | note FILE LABEL | show-management-key' >&2
+        exit 64
+      fi
+      action=$1
+      if [ "$action" = show-management-key ]; then
+        if [ "$#" -ne 1 ]; then exit 64; fi
+        test -f ${managementKeyFile} && test ! -L ${managementKeyFile}
+        sed -n '1p' ${managementKeyFile}
+        exit 0
+      fi
+
+      test -f ${managementKeyFile} && test ! -L ${managementKeyFile}
+      install -d -m 0700 ${runtimeDirectory}
+      header_file="$(mktemp ${runtimeDirectory}/.management-header.XXXXXX)"
+      trap 'rm -f "$header_file"' EXIT
+      printf 'X-Management-Key: %s\n' "$(tr -d '\r\n' < ${managementKeyFile})" > "$header_file"
+      chmod 0600 "$header_file"
+      endpoint=http://127.0.0.1:8317/v0/management/auth-files
+
+      case "$action" in
+        status)
+          if [ "$#" -ne 1 ]; then exit 64; fi
+          curl --fail --silent --show-error --header "@$header_file" "$endpoint" |
+            jq '{observed_at, accounts: [.files[] | {
+              name, provider, type, auth_index, label, note, email, account, account_type, status,
+              disabled, unavailable, priority, quota, model_quotas, cooldowns,
+              success, failed, last_refresh, next_retry_after, supports_quota
+            }]}'
+          ;;
+        enable|disable)
+          if [ "$#" -ne 2 ]; then exit 64; fi
+          disabled=false
+          if [ "$action" = disable ]; then disabled=true; fi
+          jq -cn --arg name "$2" --argjson disabled "$disabled" '{name: $name, disabled: $disabled}' |
+            curl --fail --silent --show-error --header "@$header_file" --header 'Content-Type: application/json' \
+              --request PATCH --data-binary @- "$endpoint/status" | jq .
+          ;;
+        priority)
+          if [ "$#" -ne 3 ] || ! printf '%s\n' "$3" | grep -Eq '^-?[0-9]+$'; then exit 64; fi
+          jq -cn --arg name "$2" --argjson priority "$3" '{name: $name, priority: $priority}' |
+            curl --fail --silent --show-error --header "@$header_file" --header 'Content-Type: application/json' \
+              --request PATCH --data-binary @- "$endpoint/fields" | jq .
+          ;;
+        note)
+          if [ "$#" -ne 3 ] || [ -z "$3" ]; then exit 64; fi
+          jq -cn --arg name "$2" --arg note "$3" '{name: $name, note: $note}' |
+            curl --fail --silent --show-error --header "@$header_file" --header 'Content-Type: application/json' \
+              --request PATCH --data-binary @- "$endpoint/fields" | jq .
+          ;;
+        *) exit 64 ;;
+      esac
+    '';
+  };
 in
 {
   options.dotfiles.cliproxyapi = {
@@ -253,7 +322,28 @@ in
       type = lib.types.str;
       readOnly = true;
       default = authDirectory;
-      description = "Service-owned upstream OAuth credential directory";
+      description = "Service-owned upstream authentication credential directory";
+    };
+    minimumUpstreamAccounts = lib.mkOption {
+      type = lib.types.ints.positive;
+      readOnly = true;
+      default = 2;
+      description = "Minimum distinct enabled upstream accounts required by the operating runbook";
+    };
+    routingStrategy = lib.mkOption {
+      type = lib.types.enum [ "round-robin" "fill-first" ];
+      default = "round-robin";
+      description = "Credential selection policy for eligible upstream accounts";
+    };
+    sessionAffinity = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Keep a client session on one eligible credential with automatic failover";
+    };
+    sessionAffinityTtl = lib.mkOption {
+      type = lib.types.strMatching "^[1-9][0-9]*[smh]$";
+      default = "1h";
+      description = "Lifetime of upstream credential session bindings";
     };
     clients = lib.mkOption {
       type = lib.types.listOf (lib.types.enum [ "poseidon" "zeus" ]);
@@ -281,7 +371,7 @@ in
       mode = "0444";
       text = clientTemplateText;
     };
-    environment.systemPackages = [ bootstrap clientToken ];
+    environment.systemPackages = [ bootstrap clientToken accountControl ];
     dotfiles.labUpdate.requiredUnits = [ "cliproxyapi.service" ];
 
     systemd.services.cliproxyapi = {

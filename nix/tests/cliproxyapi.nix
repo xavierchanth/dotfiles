@@ -12,6 +12,7 @@ assert proxy.healthUrl == "http://127.0.0.1:8317/healthz";
 assert proxy.canonicalBaseUrl == "https://cliproxyapi.lab.xavierchanth.xyz/v1";
 assert proxy.stateDirectory == "/var/lib/cliproxyapi";
 assert proxy.authDirectory == "/var/lib/cliproxyapi/auth";
+assert proxy.minimumUpstreamAccounts == 2;
 assert proxy.clients == [ "poseidon" "zeus" ];
 assert lib.hasInfix "env_key = \"CLIPROXYAPI_TOKEN\"" proxy.clientTemplate;
 assert lib.hasInfix "wire_api = \"responses\"" proxy.clientTemplate;
