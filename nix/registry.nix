@@ -18,6 +18,7 @@
   service-gateway = import ./modules/nixos/service-gateway;
   docker-host = import ./modules/nixos/docker-host;
   homepage = import ./modules/nixos/homepage;
+  cliproxyapi = import ./modules/nixos/cliproxyapi;
   executor = import ./modules/nixos/executor;
   plane = import ./modules/nixos/plane;
   cage-desktop = import ./modules/nixos/cage-desktop;
