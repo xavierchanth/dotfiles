@@ -3,7 +3,7 @@ let
   homepageHostname = "lab.xavierchanth.xyz";
   executorHostname = "executor.lab.xavierchanth.xyz";
   planeHostname = "plane.lab.xavierchanth.xyz";
-  codexHostname = "codex.lab.xavierchanth.xyz";
+  cliProxyApiHostname = "cliproxyapi.lab.xavierchanth.xyz";
   hades = (mkNixos "hades").config;
   poseidon = (mkNixos "poseidon").config;
   zeus = (mkNixos "zeus").config;
@@ -11,11 +11,11 @@ let
   homepageRoute = gateway.routes.${homepageHostname};
   executorRoute = gateway.routes.${executorHostname};
   planeRoute = gateway.routes.${planeHostname};
-  codexRoute = gateway.routes.${codexHostname};
+  cliProxyApiRoute = gateway.routes.${cliProxyApiHostname};
   homepageVhost = hades.services.caddy.virtualHosts.${homepageHostname};
   executorVhost = hades.services.caddy.virtualHosts.${executorHostname};
   planeVhost = hades.services.caddy.virtualHosts.${planeHostname};
-  codexVhost = hades.services.caddy.virtualHosts.${codexHostname};
+  cliProxyApiVhost = hades.services.caddy.virtualHosts.${cliProxyApiHostname};
   caddy = hades.systemd.services.caddy;
   serviceConfig = builtins.fromJSON (builtins.readFile gateway.tailscaleService.configFile);
   systemPackageNames = map lib.getName hades.environment.systemPackages;
@@ -26,7 +26,7 @@ in
 assert gatewayHosts == [ "hades" ];
 assert hades.services.caddy.enable;
 assert !poseidon.services.caddy.enable && !zeus.services.caddy.enable;
-assert builtins.attrNames gateway.routes == [ codexHostname executorHostname homepageHostname planeHostname ];
+assert builtins.attrNames gateway.routes == [ cliProxyApiHostname executorHostname homepageHostname planeHostname ];
 assert gateway.bindAddress == "127.0.0.1" && gateway.httpsPort == 8443;
 assert gateway.tailscaleService.name == "svc:lab";
 assert gateway.tailscaleService.port == 443;
@@ -43,9 +43,9 @@ assert executorRoute.upstream.address == "127.0.0.1" && executorRoute.upstream.p
 assert executorRoute.healthPath == "/api/health" && executorRoute.upstreamUnit == "executor.service";
 assert planeRoute.upstream.address == "127.0.0.1" && planeRoute.upstream.port == 8080;
 assert planeRoute.healthPath == "/" && planeRoute.upstreamUnit == "plane.service";
-assert codexRoute.upstream.address == "127.0.0.1" && codexRoute.upstream.port == 8317;
-assert codexRoute.healthPath == "/healthz" && codexRoute.upstreamUnit == "cliproxyapi.service";
-assert codexRoute.allowedPaths == [
+assert cliProxyApiRoute.upstream.address == "127.0.0.1" && cliProxyApiRoute.upstream.port == 8317;
+assert cliProxyApiRoute.healthPath == "/healthz" && cliProxyApiRoute.upstreamUnit == "cliproxyapi.service";
+assert cliProxyApiRoute.allowedPaths == [
   "/v1/models"
   "/v1/responses"
   "/v1/responses/compact"
@@ -53,13 +53,13 @@ assert codexRoute.allowedPaths == [
 assert homepageVhost.hostName == homepageHostname && homepageVhost.listenAddresses == [ "127.0.0.1" ];
 assert executorVhost.hostName == executorHostname && executorVhost.listenAddresses == [ "127.0.0.1" ];
 assert planeVhost.hostName == planeHostname && planeVhost.listenAddresses == [ "127.0.0.1" ];
-assert codexVhost.hostName == codexHostname && codexVhost.listenAddresses == [ "127.0.0.1" ];
+assert cliProxyApiVhost.hostName == cliProxyApiHostname && cliProxyApiVhost.listenAddresses == [ "127.0.0.1" ];
 assert lib.hasInfix "auto_https disable_redirects" hades.services.caddy.globalConfig;
 assert lib.hasInfix "default_bind 127.0.0.1" hades.services.caddy.globalConfig;
 assert lib.hasInfix "https_port 8443" hades.services.caddy.globalConfig;
 assert lib.hasInfix "protocols h1 h2" hades.services.caddy.globalConfig;
 assert lib.hasInfix "strict_sni_host on" hades.services.caddy.globalConfig;
-assert lib.all (vhost: lib.hasInfix "tls internal" vhost.extraConfig) [ homepageVhost executorVhost planeVhost codexVhost ];
+assert lib.all (vhost: lib.hasInfix "tls internal" vhost.extraConfig) [ homepageVhost executorVhost planeVhost cliProxyApiVhost ];
 assert lib.hasInfix "reverse_proxy http://127.0.0.1:3000" homepageVhost.extraConfig;
 assert lib.hasInfix "health_uri /api/healthcheck" homepageVhost.extraConfig;
 assert lib.hasInfix "reverse_proxy http://127.0.0.1:4788" executorVhost.extraConfig;
@@ -70,24 +70,24 @@ assert lib.hasInfix "reverse_proxy http://127.0.0.1:8080" planeVhost.extraConfig
 assert lib.hasInfix "health_uri /" planeVhost.extraConfig;
 assert lib.hasInfix "health_status 2xx" planeVhost.extraConfig;
 assert lib.hasInfix "flush_interval -1" planeVhost.extraConfig;
-assert lib.hasInfix "@dataPlane path /v1/models /v1/responses /v1/responses/compact" codexVhost.extraConfig;
-assert lib.hasInfix "reverse_proxy @dataPlane http://127.0.0.1:8317" codexVhost.extraConfig;
-assert lib.hasInfix "health_uri /healthz" codexVhost.extraConfig;
-assert lib.hasInfix "health_status 2xx" codexVhost.extraConfig;
-assert lib.hasInfix "flush_interval -1" codexVhost.extraConfig;
-assert lib.hasInfix "respond 404" codexVhost.extraConfig;
+assert lib.hasInfix "@dataPlane path /v1/models /v1/responses /v1/responses/compact" cliProxyApiVhost.extraConfig;
+assert lib.hasInfix "reverse_proxy @dataPlane http://127.0.0.1:8317" cliProxyApiVhost.extraConfig;
+assert lib.hasInfix "health_uri /healthz" cliProxyApiVhost.extraConfig;
+assert lib.hasInfix "health_status 2xx" cliProxyApiVhost.extraConfig;
+assert lib.hasInfix "flush_interval -1" cliProxyApiVhost.extraConfig;
+assert lib.hasInfix "respond 404" cliProxyApiVhost.extraConfig;
 assert !lib.hasInfix "request_body" executorVhost.extraConfig;
 assert !lib.hasInfix "request_body" planeVhost.extraConfig;
-assert !lib.hasInfix "request_body" codexVhost.extraConfig;
+assert !lib.hasInfix "request_body" cliProxyApiVhost.extraConfig;
 assert !lib.hasInfix "basic_auth" executorVhost.extraConfig;
 assert !lib.hasInfix "basic_auth" planeVhost.extraConfig;
-assert !lib.hasInfix "basic_auth" codexVhost.extraConfig;
+assert !lib.hasInfix "basic_auth" cliProxyApiVhost.extraConfig;
 assert !lib.hasInfix "header_up" executorVhost.extraConfig;
 assert !lib.hasInfix "header_up" planeVhost.extraConfig;
-assert !lib.hasInfix "header_up" codexVhost.extraConfig;
+assert !lib.hasInfix "header_up" cliProxyApiVhost.extraConfig;
 assert !lib.hasInfix "stream_timeout" executorVhost.extraConfig;
 assert !lib.hasInfix "stream_timeout" planeVhost.extraConfig;
-assert !lib.hasInfix "stream_timeout" codexVhost.extraConfig;
+assert !lib.hasInfix "stream_timeout" cliProxyApiVhost.extraConfig;
 assert !hades.services.caddy.openFirewall;
 assert lib.all (port: !(builtins.elem port hades.networking.firewall.allowedTCPPorts)) [ 80 443 ];
 assert !(builtins.elem 443 hades.networking.firewall.allowedUDPPorts);

@@ -27,7 +27,7 @@
     upstreamUnit = "plane.service";
   };
 
-  dotfiles.serviceGateway.routes."codex.lab.xavierchanth.xyz" = {
+  dotfiles.serviceGateway.routes."cliproxyapi.lab.xavierchanth.xyz" = {
     upstream = {
       address = "127.0.0.1";
       port = 8317;
