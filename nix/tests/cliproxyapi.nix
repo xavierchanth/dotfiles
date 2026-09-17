@@ -13,6 +13,8 @@ assert proxy.canonicalBaseUrl == "https://cliproxyapi.lab.xavierchanth.xyz/v1";
 assert proxy.stateDirectory == "/var/lib/cliproxyapi";
 assert proxy.authDirectory == "/var/lib/cliproxyapi/auth";
 assert proxy.minimumUpstreamAccounts == 2;
+assert proxy.routingStrategy == "round-robin";
+assert proxy.sessionAffinity && proxy.sessionAffinityTtl == "1h";
 assert proxy.clients == [ "poseidon" "zeus" ];
 assert lib.hasInfix "env_key = \"CLIPROXYAPI_TOKEN\"" proxy.clientTemplate;
 assert lib.hasInfix "wire_api = \"responses\"" proxy.clientTemplate;
@@ -25,5 +27,6 @@ assert unit.serviceConfig.NoNewPrivileges && unit.serviceConfig.ProtectSystem ==
 assert !(lib.hasInfix "cpa_" unit.serviceConfig.ExecStart);
 assert !(lib.hasInfix "management-key" unit.serviceConfig.ExecStart);
 assert builtins.elem "cliproxyapi.service" hades.dotfiles.labUpdate.requiredUnits;
+assert lib.any (package: lib.getName package == "cliproxyapi-account") hades.environment.systemPackages;
 assert !(builtins.elem 8317 hades.networking.firewall.allowedTCPPorts);
 true

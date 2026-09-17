@@ -128,6 +128,7 @@
   jioValidation = import ./tests/jio.nix { inherit lib mkHome home-manager jioPackageFor pkgsFor; };
   homepageValidation = import ./tests/homepage.nix { inherit mkNixos contextFor; };
   cliproxyapiValidation = import ./tests/cliproxyapi.nix { inherit lib mkNixos contextFor; };
+  cpaManagerPlusValidation = import ./tests/cpa-manager-plus.nix { inherit lib mkNixos contextFor; };
   serviceGatewayValidation = import ./tests/service-gateway.nix { inherit lib mkNixos contextFor; };
   executorValidation = let
     hades = (mkNixos "hades").config;
@@ -145,7 +146,7 @@
      assert !(hades.systemd.services ? executor-offsite-backup);
      assert hades.systemd.timers.executor-backup.timerConfig.Unit == "executor-backup.service";
      true;
-  checked = builtins.deepSeq validKinds (assert resolverTests; assert profileTests; assert codingValidation; assert inventoryValidation; assert darwinServerValidation; assert homepageValidation; assert cliproxyapiValidation; assert serviceGatewayValidation; assert executorValidation; true);
+  checked = builtins.deepSeq validKinds (assert resolverTests; assert profileTests; assert codingValidation; assert inventoryValidation; assert darwinServerValidation; assert homepageValidation; assert cliproxyapiValidation; assert cpaManagerPlusValidation; assert serviceGatewayValidation; assert executorValidation; true);
   systems = [ "aarch64-darwin" "aarch64-linux" "x86_64-linux" ];
   deployNodes = attrs deployNames (name: let
     host = inventory.${name};
@@ -268,6 +269,10 @@ in builtins.seq checked (builtins.seq deployValidation {
 
       cliproxyapi = assert cliproxyapiValidation; pkgs.runCommand "cliproxyapi-tests" { } ''
         echo 'CLIProxyAPI eval assertions passed' > $out
+      '';
+
+      cpa-manager-plus = assert cpaManagerPlusValidation; pkgs.runCommand "cpa-manager-plus-tests" { } ''
+        echo 'CPA Manager Plus eval assertions passed' > $out
       '';
 
       cage-mcp-protocol = pkgs.runCommand "cage-mcp-protocol-tests" {

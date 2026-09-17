@@ -316,7 +316,7 @@ in
       type = lib.types.str;
       readOnly = true;
       default = stateDirectory;
-      description = "Service-owned persistent OAuth and proxy credential state";
+      description = "Service-owned persistent upstream authentication and proxy credential state";
     };
     authDirectory = lib.mkOption {
       type = lib.types.str;
