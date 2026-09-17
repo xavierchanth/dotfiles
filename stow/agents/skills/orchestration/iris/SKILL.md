@@ -31,6 +31,10 @@ Use the lightest structure that fits. Handle immediate conversation directly. Us
 
 Ordinary Teams and DIVE Teams are peer top-level Codex tasks. A Team Coordinator leads an ordinary Team; a DIVE Coordinator specializes that responsibility and directly leads a DIVE Team, with stage roles beneath it.
 
+Apply Coordination Core's [Team scope and naming guidance](../coordination-core/references/team-scope.md): prefer concise topic-based Team names, with organization and Project context supplied by the containing Project. The same name may identify different Teams in different Projects; resolve Project context and live task identity before routing or changing a Team. Keep DIVE as a workflow choice rather than a title prefix or suffix.
+
+When multiple working Teams contribute to the same repository, establish or reuse its single [Version Control Team](../coordination-core/roles/version-control-coordinator.md), even when those Teams belong to different saved Projects. Communicate the transition and obtain acknowledgments from existing contributors as well as new ones, following the shared scope guidance. Let contributors hand changes directly to the repository's version-control owner.
+
 In this suite, **Task** is narrower than the harness's generic use of “task”: it means a bounded assignment without Team Coordinator behavior. The harness may call both Tasks and Teams tasks or threads.
 
 "Create a task" defaults to a Task. "Start a Team" defaults to an ordinary Team unless Xavier requests or selects DIVE. Suggest the structure that would materially help and apply it when requested or accepted. Carry established choices forward without asking again.

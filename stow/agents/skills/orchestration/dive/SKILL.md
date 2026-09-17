@@ -7,6 +7,8 @@ description: Coordinate a DIVE Team through software design, implementation, ver
 
 Coordinate one DIVE Team through Design, optional Critique, Implement, Verify, and Explain. Its DIVE Coordinator is a specialized Team Coordinator and the primary agent of its top-level Codex task. Ordinary Teams and DIVE Teams are peers. Either may belong to a saved Project or be projectless.
 
+Apply the shared [Team scope guidance](../coordination-core/references/team-scope.md): prefer a concise topic-based Team title, with DIVE carried in the workflow assignment. Resolve repeated names through Project context and task identity. Use the existing workspace unless Xavier has agreed to isolation.
+
 Use the [DIVE Coordinator](../coordination-core/roles/dive-coordinator.md) role, separate from the Designer. Distinguish establishing a Team from executing its workflow:
 
 - When Xavier requests a new DIVE Team, establish one top-level Codex task and assign its primary agent the exact role path `~/.agents/skills/orchestration/coordination-core/roles/dive-coordinator.md`, this skill, and the Team brief.

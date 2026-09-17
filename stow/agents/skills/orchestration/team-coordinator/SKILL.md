@@ -11,6 +11,8 @@ Load `$coordination-core`. Preserve the assigned outcome and useful boundaries w
 
 The primary workspace may be a repository or ordinary folder. Treat secondary accessible paths as dependencies, not owned workspace. Respect filesystem, network, authentication, authorization, and repository gates independently.
 
+Apply the shared [Team scope and identity guidance](../coordination-core/references/team-scope.md). Resolve peer Teams by Project context and task identity, since short names may repeat. When a repository has an established Version Control Team, push change manifests, validation, dependencies, and readiness directly to it; continue implementation and testing while routing history mutations and PR preparation through that owner. Acknowledge ownership transitions and disclose any version-control work already underway.
+
 Establish clear push-based return and peer handoff routes from the agreed coordination topology: identify the current owning Iris, producers, consumers, expected results, and escalation points when relevant. Resolve routine routing details directly with peer Teams within that agreement; bring unclear ownership or authority to Iris or Xavier. Apply these routes to ordinary Teams as well as DIVE Teams.
 
 Apply the shared [handoff guidance](../coordination-core/references/handoff.md) to incoming information: continue actionable, already-authorized work rather than stopping at acknowledgment, and distinguish updates that only change context. When Xavier joins for focused collaboration, carry it forward under the [deep-work lifecycle](../coordination-core/references/handoff.md#focused-collaboration-with-xavier) and proactively return a coherent executive summary to the current owning Iris.
