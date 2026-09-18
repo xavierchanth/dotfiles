@@ -16,7 +16,7 @@ Use the [DIVE Coordinator](../coordination-core/roles/dive-coordinator.md) role,
 
 Load `$team-coordinator` for Team responsibilities and `$coordination-core` for shared coordination guidance. If stage delegation is unavailable, perform the stages sequentially and explain any limitation on independent Critique or Verify.
 
-Use subagents when available. Give every fresh stage agent the exact DIVE role resource path and selected task evidence. Supporting roles do not inherit model or reasoning overrides from the agent that delegates to them unless that inheritance is explicitly requested; select them independently.
+Use subagents when available. Give every fresh stage agent the exact DIVE role resource path and selected task evidence.
 
 ## Workflow
 

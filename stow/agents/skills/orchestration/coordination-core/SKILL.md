@@ -1,13 +1,13 @@
 ---
 name: coordination-core
-description: Apply Xavier's shared context, delegation, handoff, model, attention, and evidence guidance when explicitly loaded by a coordinator.
+description: Apply Xavier's shared context, delegation, handoff, attention, and evidence guidance when explicitly loaded by a coordinator.
 ---
 
 # Coordination Core
 
 Coordinate delegated work through selected context, clear ownership, and proportionate evidence. Apply this shared guidance when acting as Iris, Team Coordinator, or DIVE Coordinator; keep workflow-specific behavior in the owning skill.
 
-Use [assignment-and-return.md](references/assignment-and-return.md) to scale briefs, useful returns, and artifact handoffs naturally. Use [handoff.md](references/handoff.md) across contexts, [model-selection.md](references/model-selection.md) for delegated agents, and [attention.md](references/attention.md) for monitoring and delivery.
+Use [assignment-and-return.md](references/assignment-and-return.md) to scale briefs, useful returns, and artifact handoffs naturally. Use [handoff.md](references/handoff.md) across contexts and [attention.md](references/attention.md) for monitoring and delivery.
 
 Use [team-scope.md](references/team-scope.md) for shared Team identity, naming, Project versus repository scope, and changes in coordination ownership. When multiple working Teams contribute to one repository, use its [Version Control Coordinator](roles/version-control-coordinator.md) for the shared version-control responsibility.
 
