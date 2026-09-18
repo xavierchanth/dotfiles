@@ -267,11 +267,24 @@ in builtins.seq checked (builtins.seq deployValidation {
         echo 'homepage eval assertions passed' > $out
       '';
 
-      cliproxyapi = assert cliproxyapiValidation; pkgs.runCommand "cliproxyapi-tests" { } ''
+      cliproxyapi = let
+        proxy = (mkNixos "hades").config.dotfiles.cliproxyapi;
+      in assert cliproxyapiValidation; pkgs.runCommand "cliproxyapi-tests" {
+        nativeBuildInputs = [ pkgs.openssl pkgs.gnugrep ];
+      } ''
+        management_key="cpa_management_$(openssl rand -hex ${toString proxy.managementKeyBytes})"
+        printf '%s\n' "$management_key" | grep -Eq '^cpa_management_[0-9a-f]{${toString (proxy.managementKeyBytes * 2)}}$'
+        test "$(printf '%s' "$management_key" | wc -c)" -le 72
         echo 'CLIProxyAPI eval assertions passed' > $out
       '';
 
-      cpa-manager-plus = assert cpaManagerPlusValidation; pkgs.runCommand "cpa-manager-plus-tests" { } ''
+      cpa-manager-plus = assert cpaManagerPlusValidation; pkgs.runCommand "cpa-manager-plus-tests" {
+        nativeBuildInputs = [ pkgs.bash pkgs.coreutils pkgs.findutils ];
+      } ''
+        mkdir -p state
+        ln -s "$PWD/state" data
+        bash ${../scripts/cpa-manager-plus-verify-writable-topology.sh} "$PWD/data" "$PWD/state"
+        test -z "$(find state -maxdepth 1 -name '.cpamp-write-probe.*' -print -quit)"
         echo 'CPA Manager Plus eval assertions passed' > $out
       '';
 

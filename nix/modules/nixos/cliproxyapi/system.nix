@@ -63,10 +63,11 @@ let
       ensure_secret() {
         destination=$1
         prefix=$2
+        bytes=$3
         if [ ! -e "$destination" ]; then
           temporary="$(mktemp "$destination.XXXXXX")"
           trap 'rm -f "$temporary"' EXIT
-          printf '%s%s\n' "$prefix" "$(openssl rand -hex 32)" > "$temporary"
+          printf '%s%s\n' "$prefix" "$(openssl rand -hex "$bytes")" > "$temporary"
           chmod 0600 "$temporary"
           mv "$temporary" "$destination"
           trap - EXIT
@@ -75,15 +76,25 @@ let
         chmod 0600 "$destination"
       }
 
-      ensure_secret ${clientKeyDirectory}/poseidon cpa_poseidon_
-      ensure_secret ${clientKeyDirectory}/zeus cpa_zeus_
-      ensure_secret ${managementKeyFile} cpa_management_
+      ensure_secret ${clientKeyDirectory}/poseidon cpa_poseidon_ 32
+      ensure_secret ${clientKeyDirectory}/zeus cpa_zeus_ 32
+      ensure_secret ${managementKeyFile} cpa_management_ ${toString cfg.managementKeyBytes}
       poseidon_token="$(tr -d '\r\n' < ${clientKeyDirectory}/poseidon)"
       zeus_token="$(tr -d '\r\n' < ${clientKeyDirectory}/zeus)"
       management_key="$(tr -d '\r\n' < ${managementKeyFile})"
+      if printf '%s\n' "$management_key" | grep -Eq '^cpa_management_[0-9a-f]{64}$'; then
+        temporary="$(mktemp ${stateDirectory}/.management-key.XXXXXX)"
+        trap 'rm -f "$temporary"' EXIT
+        printf '%s\n' "$management_key" | cut -c 1-${toString (15 + (cfg.managementKeyBytes * 2))} > "$temporary"
+        chmod 0600 "$temporary"
+        mv "$temporary" ${managementKeyFile}
+        trap - EXIT
+        management_key="$(tr -d '\r\n' < ${managementKeyFile})"
+      fi
       printf '%s\n' "$poseidon_token" | grep -Eq '^cpa_poseidon_[0-9a-f]{64}$'
       printf '%s\n' "$zeus_token" | grep -Eq '^cpa_zeus_[0-9a-f]{64}$'
-      printf '%s\n' "$management_key" | grep -Eq '^cpa_management_[0-9a-f]{64}$'
+      printf '%s\n' "$management_key" | grep -Eq '^cpa_management_[0-9a-f]{${toString (cfg.managementKeyBytes * 2)}}$'
+      test "$(printf '%s' "$management_key" | wc -c)" -le 72
       test "$poseidon_token" != "$zeus_token"
 
       temporary="$(mktemp ${runtimeDirectory}/.config.XXXXXX)"
@@ -330,6 +341,12 @@ in
       default = 2;
       description = "Minimum distinct enabled upstream accounts required by the operating runbook";
     };
+    managementKeyBytes = lib.mkOption {
+      type = lib.types.ints.positive;
+      readOnly = true;
+      default = 24;
+      description = "Random-byte count for the bcrypt-compatible loopback management key";
+    };
     routingStrategy = lib.mkOption {
       type = lib.types.enum [ "round-robin" "fill-first" ];
       default = "round-robin";
@@ -379,6 +396,10 @@ in
       wantedBy = [ "multi-user.target" ];
       after = [ "network-online.target" ];
       wants = [ "network-online.target" ];
+      unitConfig = {
+        StartLimitIntervalSec = "5min";
+        StartLimitBurst = 3;
+      };
       serviceConfig = {
         Type = "simple";
         User = serviceUser;
@@ -393,7 +414,7 @@ in
         ExecStart = "${package}/bin/cli-proxy-api -config ${runtimeConfig}";
         ExecStartPost = pkgs.writeShellScript "cliproxyapi-wait-healthy" ''
           set -eu
-          for _attempt in $(${pkgs.coreutils}/bin/seq 1 60); do
+          for _attempt in $(${pkgs.coreutils}/bin/seq 1 30); do
             if ${pkgs.curl}/bin/curl --fail --silent --show-error --max-time 5 ${cfg.healthUrl} \
               | ${pkgs.jq}/bin/jq --exit-status '.status == "ok"' >/dev/null; then
               exit 0
@@ -404,6 +425,7 @@ in
         '';
         Restart = "on-failure";
         RestartSec = "5s";
+        TimeoutStartSec = "75s";
         NoNewPrivileges = true;
         PrivateDevices = true;
         PrivateTmp = true;

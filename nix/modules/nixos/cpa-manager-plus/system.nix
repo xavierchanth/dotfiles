@@ -44,6 +44,10 @@ let
       umask 077
       install -d -m 0700 ${stateDirectory}
       if [ ! -e ${adminKeyFile} ]; then
+        if [ -e ${databasePath} ]; then
+          echo '${adminKeyFile} is missing while the CPAMP database exists; restore the matching key or run the documented reset procedure' >&2
+          exit 1
+        fi
         temporary="$(mktemp ${stateDirectory}/.admin-key.XXXXXX)"
         trap 'rm -f "$temporary"' EXIT
         printf 'cpamp_%s\n' "$(openssl rand -hex 32)" > "$temporary"
@@ -54,7 +58,26 @@ let
       test -f ${adminKeyFile} && test ! -L ${adminKeyFile}
       chmod 0600 ${adminKeyFile}
       tr -d '\r\n' < ${adminKeyFile} | grep -Eq '^cpamp_[0-9a-f]{64}$'
+      if [ -e ${databasePath} ] && [ ! -e ${dataKeyPath} ]; then
+        echo '${dataKeyPath} is missing while the CPAMP database exists; restore the matching encryption key' >&2
+        exit 1
+      fi
+      if [ -e ${dataKeyPath} ]; then
+        test -f ${dataKeyPath} && test ! -L ${dataKeyPath}
+        chmod 0600 ${dataKeyPath}
+      fi
+      for sqlite_file in ${databasePath} ${databasePath}-wal ${databasePath}-shm ${databasePath}-journal; do
+        if [ -e "$sqlite_file" ]; then
+          test -f "$sqlite_file" && test ! -L "$sqlite_file"
+          chmod 0600 "$sqlite_file"
+        fi
+      done
     '';
+  };
+  verifyWritableTopology = pkgs.writeShellApplication {
+    name = "cpa-manager-plus-verify-writable-topology";
+    runtimeInputs = [ pkgs.coreutils ];
+    text = builtins.readFile ../../../../scripts/cpa-manager-plus-verify-writable-topology.sh;
   };
   adminKey = pkgs.writeShellApplication {
     name = "cpa-manager-plus-admin-key";
@@ -164,11 +187,16 @@ in
       wants = [ "network-online.target" "cliproxyapi.service" ];
       environment = {
         HTTP_ADDR = cfg.bind;
-        USAGE_DB_PATH = databasePath;
-        CPA_MANAGER_DATA_KEY_PATH = dataKeyPath;
-        CPA_MANAGER_ADMIN_KEY_FILE = adminKeyFile;
+        USAGE_DATA_DIR = "/data";
+        USAGE_DB_PATH = "/data/usage.sqlite";
+        CPA_MANAGER_DATA_KEY_PATH = "/data/data.key";
+        CPA_MANAGER_ADMIN_KEY_FILE = "/data/admin-key";
         USAGE_CORS_ORIGINS = cfg.canonicalUrl;
         CPAMP_UPDATE_CHECK_ENABLED = "false";
+      };
+      unitConfig = {
+        StartLimitIntervalSec = "5min";
+        StartLimitBurst = 3;
       };
       serviceConfig = {
         Type = "simple";
@@ -178,11 +206,15 @@ in
         StateDirectoryMode = "0700";
         UMask = "0077";
         WorkingDirectory = stateDirectory;
-        ExecStartPre = "${prepare}/bin/cpa-manager-plus-prepare";
+        BindPaths = [ "${stateDirectory}:/data" ];
+        ExecStartPre = [
+          "${prepare}/bin/cpa-manager-plus-prepare"
+          "${verifyWritableTopology}/bin/cpa-manager-plus-verify-writable-topology"
+        ];
         ExecStart = "${package}/bin/cpa-manager-plus";
         ExecStartPost = pkgs.writeShellScript "cpa-manager-plus-wait-healthy" ''
           set -eu
-          for _attempt in $(${pkgs.coreutils}/bin/seq 1 60); do
+          for _attempt in $(${pkgs.coreutils}/bin/seq 1 30); do
             if ${pkgs.curl}/bin/curl --fail --silent --show-error --max-time 5 ${cfg.healthUrl} \
               | ${pkgs.jq}/bin/jq --exit-status '.ok == true and .service == "cpa-manager-plus"' >/dev/null; then
               exit 0
@@ -193,6 +225,7 @@ in
         '';
         Restart = "on-failure";
         RestartSec = "5s";
+        TimeoutStartSec = "75s";
         NoNewPrivileges = true;
         PrivateDevices = true;
         PrivateTmp = true;
