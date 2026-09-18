@@ -14,6 +14,10 @@ its private CA keys on Hades.
 | `https://cliproxyapi.lab.xavierchanth.xyz` | `http://127.0.0.1:8317` | `/healthz` | CLIProxyAPI |
 | `https://cpamp.lab.xavierchanth.xyz` | `http://127.0.0.1:18317` | `/health` | CPA Manager Plus |
 
+The Plane route is preserved for later use, but Plane setup, deployment, and
+health are deferred to the Coordination Dashboard DIVE. Plane is not a
+dependency or acceptance gate for the current gateway rollout.
+
 The reusable `service-gateway` group requires the `tailscale` group. Its typed
 `dotfiles.serviceGateway.routes` option accepts only IPv4 or IPv6 loopback
 upstreams, a valid TCP port, an absolute health path, and an optional systemd
@@ -129,10 +133,9 @@ before advertising the service:
 ```sh
 curl --fail http://127.0.0.1:3000/api/healthcheck
 curl --fail http://127.0.0.1:4788/api/health
-curl --fail --header 'Host: plane.lab.xavierchanth.xyz' http://127.0.0.1:8080/
 curl --fail http://127.0.0.1:8317/healthz
 curl --fail http://127.0.0.1:18317/health
-sudo systemctl is-active tailscaled.service homepage.service executor.service plane.service cliproxyapi.service cpa-manager-plus.service caddy.service
+sudo systemctl is-active tailscaled.service homepage.service executor.service cliproxyapi.service cpa-manager-plus.service caddy.service
 sudo ss -ltnp | grep '127.0.0.1:8443'
 curl --fail --resolve lab.xavierchanth.xyz:8443:127.0.0.1 \
   --cacert ./hades-caddy-root.pem https://lab.xavierchanth.xyz:8443/
@@ -172,8 +175,9 @@ verify it, and request service-host approval as separate A1 actions.
 3. Verify Safari and Chromium system trust, configure Firefox enterprise-root
    import where needed, and install the iOS profile followed by the manual full
    trust toggle.
-4. Test Homepage, Executor, and Plane from each intended client through the stable
-   hostnames.
+4. Test Homepage, Executor, CLIProxyAPI, and CPA Manager Plus from each intended
+   client through the stable hostnames. Plane remains outside this acceptance
+   set until the Coordination Dashboard DIVE resumes its rollout.
 
 ## Rollback contract
 
