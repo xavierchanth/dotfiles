@@ -156,7 +156,13 @@ let
       trap 'rm -rf "$temporary"' EXIT
       install -d -m 0700 "$temporary"
 
-      ${compose} exec -T plane-db pg_dump --username plane --dbname plane \
+      # POSTGRES_PASSWORD is already scoped to the database container. Translate
+      # it to libpq's expected variable there so the secret never enters the
+      # host service environment or command line. The quoted variables expand
+      # only in the container shell.
+      # shellcheck disable=SC2016
+      ${compose} exec -T plane-db sh -ceu \
+        'PGPASSWORD="$POSTGRES_PASSWORD" exec pg_dump --no-password --username "$POSTGRES_USER" --dbname "$POSTGRES_DB"' \
         | gzip -9 > "$temporary/postgres.sql.gz"
       tar -C /var/lib/docker/volumes/plane_uploads/_data -czf "$temporary/uploads.tar.gz" .
       install -m 0600 ${environmentFile} "$temporary/plane.env"
