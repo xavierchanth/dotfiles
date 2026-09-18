@@ -72,27 +72,66 @@ git-create-pull-request-as-draft = true
 git-pull-request-merge-method = "merge"
 git-show-sidebar-pr-icons = true
 git-pr-watch-auto-merge = true
-git-commit-instructions = """Always write commit messages using Conventional Commits.
+git-commit-instructions = """Write commit messages using Conventional Commits:
 
-Required format:
 type(optional-scope): concise imperative summary
 
-Requirements:
-- Never write a non-semantic commit message.
-- Use a scope only when it is clearly helpful.
-- Keep scope lowercase and one to three words max.
-- Keep the summary short, specific, and action-oriented.
-- No trailing period.
-- Prefer:
-  feat, fix, refactor, docs, test, chore, perf, build, ci, style, revert
-- Mark breaking changes with ! after type or scope.
+A commit represents one coherent outcome. Base the message on the final diff and distinguish it clearly from adjacent commits or stack layers.
+
+- Choose the type from the actual effect of the change. Prefer, when applicable: fix, feat, docs, test, refactor, perf, build, ci, style, chore, revert.
+- Derive an optional scope from the dominant stable subsystem. Omit the scope for genuinely cross-cutting changes.
+- Keep the summary concise, specific, imperative, and lowercase unless capitalization is intrinsic.
+- End the summary without a period.
+- Mark a breaking change with `!` and include a `BREAKING CHANGE:` footer only when the change introduces a real compatibility break.
+- Add a body only when rationale, constraints, migration details, or a non-obvious tradeoff would materially help future readers.
+- Describe the completed outcome. Leave development chronology, validation logs, task identifiers, and claims unsupported by the diff out of the message.
 
 Examples:
-feat(ui): add loading state to checkout button
-fix(auth): prevent refresh token reuse
-refactor(api): extract request validation middleware
-chore: bump eslint and typescript
-docs: add troubleshooting section for local dev"""
+feat(auth): add passkey sign-in
+fix(cache): prevent stale reads after invalidation
+docs(api): document pagination cursor behavior"""
+git-pr-instructions = """Write the pull request title and description for a reviewer who has not seen the originating task or conversation.
+
+Use Conventional Commit format for the title:
+
+type(optional-scope): concise imperative summary
+
+The title describes this pull request's reviewable layer. For a stacked pull request, describe this layer rather than the entire feature.
+
+Describe the final scope rather than the development chronology. Scale the body to the change and combine or omit sections when they would add little value.
+
+Cover the following reader needs when relevant:
+
+## Summary
+
+- Explain the problem or need, the intended outcome, and the observable behavior introduced by the pull request.
+- State important scope boundaries so the reviewer understands what this layer owns and what remains elsewhere.
+
+## Design
+
+- Explain the conceptual approach, important invariants, and consequential rationale.
+- Include tradeoffs, constraints, or before-and-after examples when they help evaluate the design.
+- Prefer an explanation of behavior and relationships over a file inventory.
+
+## Review guidance
+
+- Identify useful review entry points, subtle interactions, risks, and decisions deserving particular attention.
+- Surface specific unresolved questions when reviewer judgment is needed.
+
+## Verification
+
+- List checks actually performed and their results.
+- Explain what the evidence establishes.
+- Identify meaningful gaps, including runtime behavior that has not been verified.
+- Keep proposed or recommended checks distinct from completed evidence.
+
+## Stack and delivery
+
+- Include compatibility, migration, rollout, recovery, or operational implications when relevant.
+- For a stacked pull request, explain dependencies, how this layer differs from adjacent layers, and the required merge order.
+- Treat native GitHub stack membership as authoritative; description links explain relationships but do not establish membership.
+
+Preserve accurate human-written context when updating an existing description. Follow the repository's pull request template and title conventions where present. Refresh the description when the diff changes materially, and use issue-closing references only for issues this pull request actually resolves."""
 ambient-suggestions-enabled = false
 followUpQueueMode = "queue"
 dock-icon-preference = "app-default"

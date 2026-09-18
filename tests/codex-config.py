@@ -131,6 +131,8 @@ public_path = repo / "nix/modules/shared/ai-applications/codex-managed.toml"
 public_text = public_path.read_text()
 public = tomlkit.parse(public_text)
 assert public["agents"]["max_concurrent_threads_per_session"] == 256
+assert public["desktop"]["git-commit-instructions"]
+assert public["desktop"]["git-pr-instructions"]
 for forbidden in [
     "[projects",
     "[mcp_servers",
