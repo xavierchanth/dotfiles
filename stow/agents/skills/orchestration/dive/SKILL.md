@@ -7,6 +7,8 @@ description: Coordinate a DIVE Team through software design, implementation, ver
 
 Coordinate one DIVE Team through Design, optional Critique, Implement, Verify, and Explain. Its DIVE Coordinator is a specialized Team Coordinator and the primary agent of its top-level Codex task. Ordinary Teams and DIVE Teams are peers. Either may belong to a saved Project or be projectless.
 
+Apply the shared [Team scope guidance](../coordination-core/references/team-scope.md): prefer a concise topic-based Team title, with DIVE carried in the workflow assignment. Resolve repeated names through Project context and task identity. Use the existing workspace unless Xavier has agreed to isolation.
+
 Use the [DIVE Coordinator](../coordination-core/roles/dive-coordinator.md) role, separate from the Designer. Distinguish establishing a Team from executing its workflow:
 
 - When Xavier requests a new DIVE Team, establish one top-level Codex task and assign its primary agent the exact role path `~/.agents/skills/orchestration/coordination-core/roles/dive-coordinator.md`, this skill, and the Team brief.
@@ -46,7 +48,7 @@ Start Design with [design.md](references/design.md), the Team brief, relevant us
 
 Keep Design focused on investigation and a reviewable proposal. Prefer inline planning for simple proposals and use the requested presentation form when an artifact would help. When Design recommends documentation updates, experiments, or system changes beyond the assignment, present the proposal before implementation. Carry the current design into implementation and verification.
 
-Keep the assigning coordinator as Xavier's normal conversation partner. Offer a direct conversation with the Designer when focused discovery would help define the goal and the coordinator lacks enough context to mediate. Use that arrangement when Xavier requests or accepts it.
+Use the shared [focused-collaboration guidance](../coordination-core/references/handoff.md#focused-collaboration-with-xavier) to choose when work benefits from Xavier joining this Team directly. Within the Team, keep the DIVE Coordinator as Xavier's normal conversation partner. Offer a direct conversation with the Designer when focused discovery would help define the goal and the coordinator lacks enough context to mediate. Use that arrangement when Xavier requests or accepts it, and retain the Team's executive return to its owning Iris.
 
 Before implementation, establish that intent is explicit, consequential decisions are agreed, dependencies and coupled changes are understood, and acceptance checks are defined to verify the intended outcome.
 

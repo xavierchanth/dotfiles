@@ -38,6 +38,12 @@ and disappears at reboot. Request/file logging, usage aggregation, pprof,
 plugins, discovery, and the bundled control panel are disabled. WebSocket
 authentication is enabled.
 
+The management key contains a 15-byte label plus 24 random bytes encoded as
+hex, remaining below bcrypt's 72-byte input limit while retaining 192 bits of
+randomness. Startup deterministically shortens the obsolete 64-hex-character
+key format once, without printing or randomly rotating it; valid current keys
+are reused unchanged.
+
 CPAMP persistent state is `/var/lib/cpa-manager-plus` with mode `0700`.
 `usage.sqlite` contains configuration and operational history; `data.key`
 encrypts the saved CLIProxyAPI management credential; `admin-key` is the
@@ -45,6 +51,14 @@ recoverable input whose salted verifier is stored in SQLite. The service uses
 `UMask=0077`, disables its background update check, and restricts CORS to its
 canonical origin. Secrets never enter Nix, Git, service arguments, generated
 documentation, or ordinary unencrypted backups.
+
+CPAMP's process namespace bind-mounts that state directory at writable `/data`
+because upstream stores usage-import sessions there. A pre-start probe writes
+through `/data`, confirms the same inode appears below
+`/var/lib/cpa-manager-plus`, and cleans it up before the server starts. Both
+services bound their readiness waits to 75 seconds and use a three-attempt
+systemd start limit, so repeated failure ends the activation job instead of
+creating an unbounded restart loop.
 
 ## Provider bootstrap and account policy
 

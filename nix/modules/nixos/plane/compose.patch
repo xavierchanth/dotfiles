@@ -108,7 +108,7 @@
      command: server /export --console-address ":9090"
      deploy:
        replicas: 1
-@@ -218,22 +218,19 @@
+@@ -218,22 +218,20 @@
  
    # Comment this if you already have a reverse proxy running
    proxy:
@@ -131,5 +131,6 @@
 -        protocol: tcp
 -        mode: host
      volumes:
++      - /var/lib/plane/Caddyfile:/etc/caddy/Caddyfile:ro
        - proxy_config:/config
        - proxy_data:/data

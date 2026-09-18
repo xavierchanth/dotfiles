@@ -267,11 +267,24 @@ in builtins.seq checked (builtins.seq deployValidation {
         echo 'homepage eval assertions passed' > $out
       '';
 
-      cliproxyapi = assert cliproxyapiValidation; pkgs.runCommand "cliproxyapi-tests" { } ''
+      cliproxyapi = let
+        proxy = (mkNixos "hades").config.dotfiles.cliproxyapi;
+      in assert cliproxyapiValidation; pkgs.runCommand "cliproxyapi-tests" {
+        nativeBuildInputs = [ pkgs.openssl pkgs.gnugrep ];
+      } ''
+        management_key="cpa_management_$(openssl rand -hex ${toString proxy.managementKeyBytes})"
+        printf '%s\n' "$management_key" | grep -Eq '^cpa_management_[0-9a-f]{${toString (proxy.managementKeyBytes * 2)}}$'
+        test "$(printf '%s' "$management_key" | wc -c)" -le 72
         echo 'CLIProxyAPI eval assertions passed' > $out
       '';
 
-      cpa-manager-plus = assert cpaManagerPlusValidation; pkgs.runCommand "cpa-manager-plus-tests" { } ''
+      cpa-manager-plus = assert cpaManagerPlusValidation; pkgs.runCommand "cpa-manager-plus-tests" {
+        nativeBuildInputs = [ pkgs.bash pkgs.coreutils pkgs.findutils ];
+      } ''
+        mkdir -p state
+        ln -s "$PWD/state" data
+        bash ${../scripts/cpa-manager-plus-verify-writable-topology.sh} "$PWD/data" "$PWD/state"
+        test -z "$(find state -maxdepth 1 -name '.cpamp-write-probe.*' -print -quit)"
         echo 'CPA Manager Plus eval assertions passed' > $out
       '';
 
@@ -311,6 +324,14 @@ in builtins.seq checked (builtins.seq deployValidation {
         PYTHONDONTWRITEBYTECODE = "1";
       } ''
         python3 ${../tests/managed-stow.py}
+        touch "$out"
+      '';
+      codex-config = pkgs.runCommand "codex-config-tests" {
+        nativeBuildInputs = [ (pkgs.python3.withPackages (p: [ p.tomlkit ])) ];
+        TEST_ROOT = flakeSource;
+        PYTHONDONTWRITEBYTECODE = "1";
+      } ''
+        python3 ${../tests/codex-config.py}
         touch "$out"
       '';
     } // lib.optionalAttrs (builtins.elem system [ "aarch64-darwin" "x86_64-linux" ]) {

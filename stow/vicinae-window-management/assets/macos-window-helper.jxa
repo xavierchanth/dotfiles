@@ -1,0 +1,49 @@
+ObjC.import("AppKit");
+
+function value(input) { return ObjC.unwrap(input); }
+function rect(input) { return { x: Number(input.origin.x), y: Number(input.origin.y), width: Number(input.size.width), height: Number(input.size.height) }; }
+
+function screens() {
+  var all = $.NSScreen.screens;
+  var count = Number(all.count);
+  if (count === 0) throw new Error("AppKit returned no screens for this login session");
+  var primaryHeight = rect(all.objectAtIndex(0).frame).height;
+  var result = [];
+  for (var index = 0; index < count; index += 1) {
+    var screen = all.objectAtIndex(index);
+    var frame = rect(screen.frame);
+    var visible = rect(screen.visibleFrame);
+    result.push({ id: Number(value(screen.deviceDescription.objectForKey("NSScreenNumber"))), name: String(value(screen.localizedName)), x: visible.x, y: primaryHeight - visible.y - visible.height, width: visible.width, height: visible.height, frame: { x: frame.x, y: primaryHeight - frame.y - frame.height, width: frame.width, height: frame.height } });
+  }
+  return result;
+}
+
+function distance(candidate, expected) {
+  var position = candidate.position();
+  var size = candidate.size();
+  return Math.abs(position[0] - expected.x) + Math.abs(position[1] - expected.y) + Math.abs(size[0] - expected.width) + Math.abs(size[1] - expected.height);
+}
+
+function setBounds(payload) {
+  var applications = $.NSRunningApplication.runningApplicationsWithBundleIdentifier(payload.bundleId);
+  if (applications.count !== 1) throw new Error("Expected one running application for " + payload.bundleId);
+  var pid = Number(applications.objectAtIndex(0).processIdentifier);
+  var process = Application("System Events").applicationProcesses.byId(pid);
+  var candidates = process.windows().filter(function (window) { try { return String(window.name()) === payload.title; } catch (_) { return false; } });
+  if (candidates.length === 0) throw new Error("Could not find the selected window by title");
+  candidates.sort(function (left, right) { return distance(left, payload.currentBounds) - distance(right, payload.currentBounds); });
+  if (candidates.length > 1 && distance(candidates[0], payload.currentBounds) === distance(candidates[1], payload.currentBounds)) throw new Error("Window match is ambiguous; refusing to move the wrong window");
+  candidates[0].position = [payload.bounds.x, payload.bounds.y];
+  candidates[0].size = [payload.bounds.width, payload.bounds.height];
+  return { ok: true };
+}
+
+function run(argv) {
+  if (argv.length !== 1) throw new Error("Expected one JSON payload");
+  var payload = JSON.parse(argv[0]);
+  var result;
+  if (payload.operation === "screens") result = screens();
+  else if (payload.operation === "set-bounds") result = setBounds(payload);
+  else throw new Error("Unsupported operation: " + payload.operation);
+  return JSON.stringify(result);
+}

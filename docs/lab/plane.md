@@ -40,6 +40,12 @@ listener, TLS, forwarded headers, WebSocket forwarding, and Tailscale exposure.
 Plane's own pinned proxy owns its 10 MiB request-body limit. Plane's web URL and
 allowed CORS origin are both the public HTTPS origin.
 
+Plane replaces the proxy image's bundled ACME-aware Caddyfile with a
+Nix-generated HTTP-only configuration. Automatic HTTPS is disabled and the
+container listens only on `:80`; empty upstream `CERT_*` values therefore cannot
+prevent the loopback proxy from starting. The generated Caddyfile is syntax
+validated during the Nix build.
+
 ## Gateway handoff
 
 Plane presents one complete HTTP origin to Gateway:
@@ -64,7 +70,7 @@ The limit applies to the complete HTTP request body, so a multipart attachment
 must be slightly smaller than 10 MiB after encoding overhead. Gateway should not
 advertise a larger supported upload size.
 
-The route is intentionally absent until Gateway Deploy accepts this handoff.
+Gateway Deploy has accepted this handoff and owns the corresponding route.
 
 ## Runtime topology
 
@@ -116,9 +122,11 @@ re-created, but remain explicitly named and visible for operations.
 ## Lifecycle and health
 
 `plane.service` prepares the Nix-owned compose definition and secret file,
-starts the stack, and waits up to ten minutes for the loopback HTTP endpoint to
-respond successfully. It starts after Docker and network readiness and is a
-required lab rollout unit. A failed health check fails the rollout.
+starts the stack, and gives the loopback endpoint a bounded readiness window of
+about two minutes after Compose returns. The wider systemd start timeout leaves
+room for first-run image pulls. It starts after Docker and network readiness and
+is a required lab rollout unit. A failed health check prints the Compose state
+and recent proxy logs, then fails the rollout.
 
 Stopping the unit performs a Compose shutdown without deleting persistent
 volumes. Rolling back the NixOS generation restores the previous application
@@ -133,7 +141,8 @@ release downgrade.
 - a consistent compressed PostgreSQL logical dump;
 - a compressed uploads archive;
 - the secret environment file;
-- the exact compose definition, image inventory, and Plane release identifier;
+- the exact compose and HTTP-only Caddy definitions, image inventory, and Plane
+  release identifier;
 - SHA-256 checksums for every snapshot artifact.
 
 Local snapshots are retained for 14 days. For the initial single-user pilot,
