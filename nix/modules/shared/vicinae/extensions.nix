@@ -53,11 +53,17 @@
     '';
     meta.platforms = lib.platforms.darwin;
   };
+  keepassxcExtension = mkExtension "keepassxc";
+  keepassxcWithHelper = pkgs.runCommand "keepassxc-0.1.0" {} ''
+    cp -R ${keepassxcExtension}/. "$out"
+    chmod -R u+w "$out"
+    install -Dm755 \
+      ${keychainHelper}/bin/vicinae-keepassxc-keychain-helper \
+      "$out/assets/vicinae-keepassxc-helper"
+  '';
 in {
   extensions = {
     window-management = mkExtension "window-management";
-    keepassxc = mkExtension "keepassxc";
+    keepassxc = keepassxcWithHelper;
   };
-
-  inherit keepassxcCli keychainHelper;
 }

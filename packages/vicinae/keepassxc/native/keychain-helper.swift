@@ -90,15 +90,14 @@ private func retrieve(database: String) throws -> Data {
     return password
 }
 
-private func export(database: String, keyFile: String?) throws {
-    var password = try retrieve(database: database)
-    defer { password.resetBytes(in: 0..<password.count) }
+private func export(database: String, keyFile: String?, password: Data?, noPassword: Bool = false) throws {
     let process = Process()
     let input = Pipe()
     let output = Pipe()
     process.executableURL = URL(fileURLWithPath: keepassxcCLI)
     process.arguments = ["export", "--quiet", "--format", "xml"]
         + (keyFile.map { ["--key-file", $0] } ?? [])
+        + (noPassword ? ["--no-password"] : [])
         + [database]
     process.standardInput = input
     process.standardOutput = output
@@ -113,8 +112,10 @@ private func export(database: String, keyFile: String?) throws {
         if process.isRunning { process.terminate() }
     }
     DispatchQueue.global().asyncAfter(deadline: .now() + exportTimeout, execute: timeout)
-    input.fileHandleForWriting.write(password)
-    input.fileHandleForWriting.write(Data([10]))
+    if let password {
+        input.fileHandleForWriting.write(password)
+        input.fileHandleForWriting.write(Data([10]))
+    }
     try input.fileHandleForWriting.close()
 
     var xml = Data()
@@ -146,7 +147,7 @@ private func run() throws {
     let arguments = Array(CommandLine.arguments.dropFirst())
     guard arguments.count >= 2 else { throw HelperError.usage }
     let operation = arguments[0]
-    let database = try canonicalPath(arguments[1], mustExist: operation == "export")
+    let database = try canonicalPath(arguments[1], mustExist: operation == "export" || operation == "prompt-export" || operation == "key-file-export")
     switch operation {
     case "store" where arguments.count == 2:
         try store(database: database)
@@ -154,7 +155,17 @@ private func run() throws {
         try delete(database: database, allowMissing: true)
     case "export" where arguments.count == 2 || arguments.count == 3:
         let keyFile = try arguments.count == 3 ? canonicalPath(arguments[2], mustExist: true) : nil
-        try export(database: database, keyFile: keyFile)
+        var password = try retrieve(database: database)
+        defer { password.resetBytes(in: 0..<password.count) }
+        try export(database: database, keyFile: keyFile, password: password)
+    case "prompt-export" where arguments.count == 2 || arguments.count == 3:
+        let keyFile = try arguments.count == 3 ? canonicalPath(arguments[2], mustExist: true) : nil
+        var password = try readPassword()
+        defer { password.resetBytes(in: 0..<password.count) }
+        try export(database: database, keyFile: keyFile, password: password)
+    case "key-file-export" where arguments.count == 3:
+        let keyFile = try canonicalPath(arguments[2], mustExist: true)
+        try export(database: database, keyFile: keyFile, password: nil, noPassword: true)
     default:
         throw HelperError.usage
     }

@@ -2,18 +2,19 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { helperExportInvocation, parseCredentialMode, promptInvocation, unlockInvocation, type UnlockConfig } from "../src/exporter";
 
-const base = { databasePath: "/vault/main.kdbx", cliPath: "/nix/store/cli", helperPath: "/nix/store/helper" };
+const base = { databasePath: "/vault/main.kdbx", helperPath: "/extension/assets/vicinae-keepassxc-helper" };
 
 test("password prompt sends the secret only on stdin", () => {
   const invocation = promptInvocation({ ...base, credentials: { kind: "password" } }, "correct horse");
-  assert.deepEqual(invocation.args, ["export", "--quiet", "--format", "xml", "/vault/main.kdbx"]);
+  assert.deepEqual(invocation.args, ["prompt-export", "/vault/main.kdbx"]);
+  assert.equal(invocation.executable, "/extension/assets/vicinae-keepassxc-helper");
   assert.equal(invocation.stdin, "correct horse");
   assert.equal(invocation.args.includes("correct horse"), false);
 });
 
 test("key-file-only is the only mode that passes --no-password", () => {
   const invocation = promptInvocation({ ...base, credentials: { kind: "key-file-only", keyFilePath: "/keys/main.keyx" } });
-  assert.deepEqual(invocation.args, ["export", "--quiet", "--format", "xml", "--key-file", "/keys/main.keyx", "--no-password", "/vault/main.kdbx"]);
+  assert.deepEqual(invocation.args, ["key-file-export", "/vault/main.kdbx", "/keys/main.keyx"]);
   assert.equal(invocation.stdin, undefined);
 });
 
@@ -25,7 +26,7 @@ test("password plus key file remains a password-bearing mode", () => {
 
 test("remembered mode delegates export to the helper without a password", () => {
   const invocation = helperExportInvocation({ ...base, credentials: { kind: "password-key-file", keyFilePath: "/keys/main.keyx" } });
-  assert.deepEqual(invocation, { executable: "/nix/store/helper", args: ["export", "/vault/main.kdbx", "/keys/main.keyx"] });
+  assert.deepEqual(invocation, { executable: "/extension/assets/vicinae-keepassxc-helper", args: ["export", "/vault/main.kdbx", "/keys/main.keyx"] });
 });
 
 test("key-file modes require an absolute key-file path", () => {

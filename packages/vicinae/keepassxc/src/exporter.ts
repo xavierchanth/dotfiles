@@ -8,7 +8,7 @@ export type RawCredentialPreferences = Readonly<{
   keyFilePath?: string;
 }>;
 
-export type UnlockConfig = Readonly<{ databasePath: string; cliPath: string; helperPath: string; credentials: CredentialMode }>;
+export type UnlockConfig = Readonly<{ databasePath: string; helperPath: string; credentials: CredentialMode }>;
 export type Invocation = Readonly<{ executable: string; args: readonly string[]; stdin?: string }>;
 export type UnlockRequest =
   | Readonly<{ kind: "prompt"; password: string }>
@@ -29,12 +29,11 @@ export function parseCredentialMode(preferences: RawCredentialPreferences): Cred
 }
 
 export function promptInvocation(config: UnlockConfig, password?: string): Invocation {
-  const args = ["export", "--quiet", "--format", "xml"];
-  if (config.credentials.kind === "password-key-file" || config.credentials.kind === "key-file-only") args.push("--key-file", config.credentials.keyFilePath);
-  if (config.credentials.kind === "key-file-only") args.push("--no-password");
-  args.push(config.databasePath);
+  const args = config.credentials.kind === "key-file-only"
+    ? ["key-file-export", config.databasePath, config.credentials.keyFilePath]
+    : ["prompt-export", config.databasePath, ...(config.credentials.kind === "password-key-file" ? [config.credentials.keyFilePath] : [])];
   if (config.credentials.kind !== "key-file-only" && password === undefined) throw new Error("Database password is required");
-  return { executable: exactPath(config.cliPath, "KeePassXC CLI"), args, ...(password === undefined ? {} : { stdin: password }) };
+  return { executable: exactPath(config.helperPath, "KeePassXC helper"), args, ...(password === undefined ? {} : { stdin: password }) };
 }
 
 export function helperExportInvocation(config: UnlockConfig): Invocation {

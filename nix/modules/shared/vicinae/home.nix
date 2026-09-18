@@ -25,13 +25,9 @@ in {
     extensions = builtins.attrValues packaged.extensions;
     settings = lib.recursiveUpdate (import ./settings.nix) {
       providers.keepassxc.preferences = {
-        keepassxcCliPath = packaged.keepassxcCli;
-        keychainHelperPath = "${packaged.keychainHelper}/bin/vicinae-keepassxc-keychain-helper";
         credentialMode = "password";
         expiryMinutes = "5";
       };
     };
   };
-
-  home.packages = [packaged.keychainHelper];
 }

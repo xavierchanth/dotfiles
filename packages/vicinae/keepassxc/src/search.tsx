@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Action, ActionPanel, Clipboard, Form, Icon, List, getPreferenceValues, showToast, Toast } from "@vicinae/api";
+import { Action, ActionPanel, Clipboard, Form, Icon, List, environment, getPreferenceValues, showToast, Toast } from "@vicinae/api";
 import type { CredentialMode, EntryId, VaultEntry, VaultState } from "./domain";
 import { forgetPassword, parseCredentialMode, rememberPassword, unlockVault, type UnlockConfig, type UnlockRequest } from "./exporter";
 import { loadFavorites, saveFavorites } from "./favorites";
@@ -7,10 +7,8 @@ import { currentTotp } from "./totp";
 
 type Preferences = {
   databasePath: string;
-  keepassxcCliPath: string;
   credentialMode: "password" | "password-key-file" | "key-file-only";
   keyFilePath?: string;
-  keychainHelperPath: string;
   expiryMinutes: string;
 };
 
@@ -24,8 +22,7 @@ export default function SearchKeePassXC() {
   const credentials = parseCredentialMode(preferences);
   const config: UnlockConfig = {
     databasePath: preferences.databasePath,
-    cliPath: preferences.keepassxcCliPath,
-    helperPath: preferences.keychainHelperPath,
+    helperPath: `${environment.assetsPath}/vicinae-keepassxc-helper`,
     credentials,
   };
 
