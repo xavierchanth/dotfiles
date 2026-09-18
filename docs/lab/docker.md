@@ -51,7 +51,7 @@ and choose build targets explicitly when architecture matters.
 ## Implementation and rollout
 
 Preflight on 2026-09-12 confirmed Hades runs NixOS 26.05 and is reachable over
-Tailscale (`hades.taila8d380.ts.net`, `100.78.41.72`). It reported 59 GiB total RAM,
+Tailscale. It reported 59 GiB total RAM,
 58 GiB available RAM, and 857 GiB available on its root disk. Docker was not on
 the operator's PATH. Activation requires the operator's interactive sudo password.
 These observations are a dated preflight, not ongoing health guarantees.

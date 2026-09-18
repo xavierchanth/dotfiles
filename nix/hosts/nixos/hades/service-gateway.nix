@@ -1,5 +1,9 @@
 { ... }:
 {
+  dotfiles.serviceGateway.bindAddress = "127.0.0.1";
+  dotfiles.serviceGateway.httpsPort = 8443;
+  dotfiles.serviceGateway.redirects."xavierchanth.xyz" = "https://lab.xavierchanth.xyz";
+
   dotfiles.serviceGateway.routes."lab.xavierchanth.xyz" = {
     upstream = {
       address = "127.0.0.1";

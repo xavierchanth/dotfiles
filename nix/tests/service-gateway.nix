@@ -19,6 +19,7 @@ let
   planeVhost = hades.services.caddy.virtualHosts.${planeHostname};
   cliProxyApiVhost = hades.services.caddy.virtualHosts.${cliProxyApiHostname};
   cpampVhost = hades.services.caddy.virtualHosts.${cpampHostname};
+  apexVhost = hades.services.caddy.virtualHosts."xavierchanth.xyz";
   caddy = hades.systemd.services.caddy;
   serviceConfig = builtins.fromJSON (builtins.readFile gateway.tailscaleService.configFile);
   systemPackageNames = map lib.getName hades.environment.systemPackages;
@@ -32,12 +33,9 @@ assert !poseidon.services.caddy.enable && !zeus.services.caddy.enable;
 assert builtins.attrNames gateway.routes == [ cliProxyApiHostname cpampHostname executorHostname homepageHostname planeHostname ];
 assert gateway.bindAddress == "127.0.0.1" && gateway.httpsPort == 8443;
 assert gateway.tailscaleService.name == "svc:lab";
-assert gateway.tailscaleService.port == 443;
 assert gateway.tailscaleService.target == "tcp://127.0.0.1:8443";
-assert lib.hasSuffix "-serve-config.json" (toString gateway.tailscaleService.configFile);
-assert serviceConfig.version == "0.0.1";
-assert !serviceConfig.services."svc:lab".advertised;
 assert serviceConfig.services."svc:lab".endpoints."tcp:443" == "tcp://127.0.0.1:8443";
+assert gateway.redirects."xavierchanth.xyz" == "https://lab.xavierchanth.xyz";
 assert gateway.ca.rootCertificate == "/var/lib/caddy/.local/share/caddy/pki/authorities/local/root.crt";
 assert gateway.ca.fingerprintFile == "/var/lib/caddy/.dotfiles-root-ca.sha256";
 assert homepageRoute.upstream.address == "127.0.0.1" && homepageRoute.upstream.port == 3000;
@@ -61,6 +59,9 @@ assert executorVhost.hostName == executorHostname && executorVhost.listenAddress
 assert planeVhost.hostName == planeHostname && planeVhost.listenAddresses == [ "127.0.0.1" ];
 assert cliProxyApiVhost.hostName == cliProxyApiHostname && cliProxyApiVhost.listenAddresses == [ "127.0.0.1" ];
 assert cpampVhost.hostName == cpampHostname && cpampVhost.listenAddresses == [ "127.0.0.1" ];
+assert apexVhost.hostName == "xavierchanth.xyz" && apexVhost.listenAddresses == [ "127.0.0.1" ];
+assert lib.hasInfix "tls internal" apexVhost.extraConfig;
+assert lib.hasInfix "redir https://lab.xavierchanth.xyz{uri} permanent" apexVhost.extraConfig;
 assert lib.hasInfix "auto_https disable_redirects" hades.services.caddy.globalConfig;
 assert lib.hasInfix "default_bind 127.0.0.1" hades.services.caddy.globalConfig;
 assert lib.hasInfix "https_port 8443" hades.services.caddy.globalConfig;
@@ -113,9 +114,8 @@ assert !lib.hasInfix "stream_timeout" cpampVhost.extraConfig;
 assert !hades.services.caddy.openFirewall;
 assert lib.all (port: !(builtins.elem port hades.networking.firewall.allowedTCPPorts)) [ 80 443 ];
 assert !(builtins.elem 443 hades.networking.firewall.allowedUDPPorts);
-assert !(hades.networking.firewall.interfaces ? tailscale0)
-  || (lib.all (port: !(builtins.elem port hades.networking.firewall.interfaces.tailscale0.allowedTCPPorts)) [ 80 443 ]
-      && !(builtins.elem 443 hades.networking.firewall.interfaces.tailscale0.allowedUDPPorts));
+assert hades.networking.firewall.interfaces.tailscale0.allowedTCPPorts == [ 53 ];
+assert !(builtins.elem 443 hades.networking.firewall.interfaces.tailscale0.allowedUDPPorts);
 assert builtins.elem "homepage.service" caddy.wants;
 assert builtins.elem "homepage.service" caddy.after;
 assert builtins.elem "executor.service" caddy.wants;

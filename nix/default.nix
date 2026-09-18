@@ -131,6 +131,8 @@
   cliproxyapiValidation = import ./tests/cliproxyapi.nix { inherit lib mkNixos contextFor; };
   cpaManagerPlusValidation = import ./tests/cpa-manager-plus.nix { inherit lib mkNixos contextFor; };
   serviceGatewayValidation = import ./tests/service-gateway.nix { inherit lib mkNixos contextFor; };
+  tailnetGatewayDnsValidation = import ./tests/tailnet-gateway-dns.nix { inherit lib mkNixos contextFor; };
+  labDnsDhcpValidation = import ./tests/lab-dns-dhcp.nix { inherit lib mkNixos contextFor; };
   tailscaleRouterValidation = import ./tests/tailscale-router.nix { inherit lib mkNixos; };
   erisHeadlessValidation = import ./tests/eris-headless.nix { inherit lib mkDarwin; };
   executorValidation = let
@@ -149,7 +151,7 @@
      assert !(hades.systemd.services ? executor-offsite-backup);
      assert hades.systemd.timers.executor-backup.timerConfig.Unit == "executor-backup.service";
      true;
-  checked = builtins.deepSeq validKinds (assert resolverTests; assert profileTests; assert codingValidation; assert inventoryValidation; assert darwinServerValidation; assert homepageValidation; assert cliproxyapiValidation; assert cpaManagerPlusValidation; assert serviceGatewayValidation; assert tailscaleRouterValidation; assert erisHeadlessValidation; assert executorValidation; true);
+  checked = builtins.deepSeq validKinds (assert resolverTests; assert profileTests; assert codingValidation; assert inventoryValidation; assert darwinServerValidation; assert homepageValidation; assert cliproxyapiValidation; assert cpaManagerPlusValidation; assert serviceGatewayValidation; assert tailnetGatewayDnsValidation; assert labDnsDhcpValidation; assert tailscaleRouterValidation; assert erisHeadlessValidation; assert executorValidation; true);
   systems = [ "aarch64-darwin" "aarch64-linux" "x86_64-linux" ];
   deployNodes = attrs deployNames (name: let
     host = inventory.${name};
@@ -278,7 +280,7 @@ in builtins.seq checked (builtins.seq deployValidation {
           {
             admin off
           }
-          cliproxyapi.lab.xavierchanth.xyz:8443 {
+          cliproxyapi.lab.xavierchanth.xyz:443 {
             ${cliProxyVhost.extraConfig}
           }
         '';
@@ -307,6 +309,19 @@ in builtins.seq checked (builtins.seq deployValidation {
 
       tailscale-router = assert tailscaleRouterValidation; pkgs.runCommand "tailscale-router-tests" { } ''
         echo 'Tailscale router eval assertions passed' > $out
+      '';
+
+      tailnet-gateway-dns = assert tailnetGatewayDnsValidation; pkgs.runCommand "tailnet-gateway-dns-tests" { } ''
+        echo 'tailnet gateway DNS eval assertions passed' > $out
+      '';
+
+      lab-dns-dhcp = assert labDnsDhcpValidation; pkgs.runCommand "lab-dns-dhcp-tests" {
+        nativeBuildInputs = [ pkgs.bash pkgs.coreutils pkgs.jq pkgs.python3 ];
+      } ''
+        export TEST_ROOT=${flakeSource}
+        ${pkgs.python3}/bin/python3 ${../tests/lab-runtime-state.py}
+        ${pkgs.python3}/bin/python3 ${../tests/lab-dhcp-watchdog.py}
+        echo 'Lab DNS and DHCP eval assertions passed' > $out
       '';
 
       eris-headless = assert erisHeadlessValidation; pkgs.runCommand "eris-headless-tests" { } ''

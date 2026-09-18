@@ -38,14 +38,14 @@ assert builtins.elem {
 } policy.grants;
 assert builtins.elem {
   src = [ "autogroup:owner" ];
-  dst = [ "autogroup:internet" ];
-  via = [ "tag:lab-host" ];
-  ip = [ "*" ];
+  dst = [ "svc:lab" ];
+  ip = [ "tcp:443" ];
 } policy.grants;
 assert builtins.elem {
   src = [ "autogroup:owner" ];
-  dst = [ "svc:lab" ];
-  ip = [ "tcp:443" ];
+  dst = [ "autogroup:internet" ];
+  via = [ "tag:lab-host" ];
+  ip = [ "*" ];
 } policy.grants;
 assert policy.ssh == [{
   action = "accept";

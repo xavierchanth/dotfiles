@@ -17,15 +17,13 @@ let
     builtins.match "^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$" hostname != null
     && builtins.match ".*\\.\\..*" hostname == null;
   serviceTarget = "tcp://${cfg.bindAddress}:${toString cfg.httpsPort}";
-  serviceConfigFile = builtins.toFile
-    "${lib.removePrefix "svc:" cfg.tailscaleService.name}-serve-config.json"
-    (builtins.toJSON {
-      version = "0.0.1";
-      services.${cfg.tailscaleService.name} = {
-        advertised = false;
-        endpoints."tcp:${toString cfg.tailscaleService.port}" = serviceTarget;
-      };
-    });
+  serviceConfigFile = builtins.toFile "lab-serve-config.json" (builtins.toJSON {
+    version = "0.0.1";
+    services."svc:lab" = {
+      advertised = false;
+      endpoints."tcp:443" = serviceTarget;
+    };
+  });
   caRootCertificate = "${config.services.caddy.dataDir}/.local/share/caddy/pki/authorities/local/root.crt";
   caRootPrivateKey = "${config.services.caddy.dataDir}/.local/share/caddy/pki/authorities/local/root.key";
   caFingerprintFile = "${config.services.caddy.dataDir}/.dotfiles-root-ca.sha256";
@@ -102,42 +100,25 @@ in
 {
   options.dotfiles.serviceGateway = {
     bindAddress = mkOption {
-      type = types.enum [ "127.0.0.1" ];
-      readOnly = true;
+      type = types.strMatching "^[0-9]{1,3}(\\.[0-9]{1,3}){3}$";
       default = "127.0.0.1";
-      description = "Loopback address where the local TLS gateway listens.";
+      description = "Address where the private TLS gateway listens.";
     };
     httpsPort = mkOption {
       type = types.port;
-      readOnly = true;
       default = 8443;
-      description = "Loopback port where the local TLS gateway listens.";
+      description = "TCP port where the private TLS gateway listens.";
     };
     tailscaleService = {
-      name = mkOption {
-        type = types.strMatching "^svc:[a-z0-9][a-z0-9-]*$";
-        readOnly = true;
-        default = "svc:lab";
-        description = "Stable Tailscale Service resource consumed by the gateway.";
-      };
-      port = mkOption {
-        type = types.port;
-        readOnly = true;
-        default = 443;
-        description = "Raw TCP port exposed by the Tailscale Service.";
-      };
-      target = mkOption {
-        type = types.str;
-        readOnly = true;
-        default = serviceTarget;
-        description = "Raw TCP target for the Tailscale Service endpoint.";
-      };
-      configFile = mkOption {
-        type = types.path;
-        readOnly = true;
-        default = serviceConfigFile;
-        description = "Unadvertised Tailscale Service configuration for the later A1 activation step.";
-      };
+      name = mkOption { type = types.str; readOnly = true; default = "svc:lab"; };
+      port = mkOption { type = types.port; readOnly = true; default = 443; };
+      target = mkOption { type = types.str; readOnly = true; default = serviceTarget; };
+      configFile = mkOption { type = types.path; readOnly = true; default = serviceConfigFile; };
+    };
+    redirects = mkOption {
+      type = types.attrsOf (types.strMatching "^https://[a-z0-9]([a-z0-9.-]*[a-z0-9])?$");
+      default = { };
+      description = "Permanent HTTPS origin redirects keyed by canonical hostname.";
     };
     ca = {
       rootCertificate = mkOption {
@@ -216,7 +197,7 @@ in
           strict_sni_host on
         }
       '';
-      virtualHosts = lib.mapAttrs (hostname: route: {
+      virtualHosts = (lib.mapAttrs (hostname: route: {
         hostName = hostname;
         listenAddresses = [ cfg.bindAddress ];
         extraConfig = ''
@@ -233,7 +214,14 @@ in
           ${lib.optionalString (route.allowedPaths != [ ]) "respond 404"}
           ${lib.optionalString (route.allowedPaths != [ ]) "}"}
         '';
-      }) cfg.routes;
+      }) cfg.routes) // (lib.mapAttrs (hostname: target: {
+        hostName = hostname;
+        listenAddresses = [ cfg.bindAddress ];
+        extraConfig = ''
+          tls internal
+          redir ${target}{uri} permanent
+        '';
+      }) cfg.redirects);
     };
 
     systemd.services.caddy = {
