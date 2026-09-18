@@ -222,6 +222,7 @@ in
         extraConfig = ''
           tls internal
           ${allowedPathConfig route}
+          ${lib.optionalString (route.allowedPaths != [ ]) "route {"}
           reverse_proxy ${proxyTarget route} {
             health_uri ${route.healthPath}
             health_interval 10s
@@ -230,6 +231,7 @@ in
             flush_interval -1
           }
           ${lib.optionalString (route.allowedPaths != [ ]) "respond 404"}
+          ${lib.optionalString (route.allowedPaths != [ ]) "}"}
         '';
       }) cfg.routes;
     };

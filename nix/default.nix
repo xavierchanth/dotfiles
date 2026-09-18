@@ -259,8 +259,37 @@ in builtins.seq checked (builtins.seq deployValidation {
         touch "$out"
       '';
 
-      service-gateway = assert serviceGatewayValidation; pkgs.runCommand "service-gateway-tests" { } ''
-        echo 'service gateway eval assertions passed' > $out
+      service-gateway = let
+        cliProxyVhost = (mkNixos "hades").config.services.caddy.virtualHosts."cliproxyapi.lab.xavierchanth.xyz";
+        caddyfile = pkgs.writeText "service-gateway-cliproxyapi-Caddyfile" ''
+          {
+            admin off
+          }
+          cliproxyapi.lab.xavierchanth.xyz:8443 {
+            ${cliProxyVhost.extraConfig}
+          }
+        '';
+      in assert serviceGatewayValidation; pkgs.runCommand "service-gateway-tests" {
+        nativeBuildInputs = [ pkgs.caddy pkgs.jq ];
+      } ''
+        caddy adapt --config ${caddyfile} --adapter caddyfile > adapted.json
+        handlers=$(jq -c '[
+          .apps.http.servers[].routes[]
+          | ..
+          | objects
+          | .handler?
+          | select(. == "reverse_proxy" or . == "static_response")
+        ]' adapted.json)
+        test "$handlers" = '["reverse_proxy","static_response"]'
+        paths=$(jq -c '[
+          .apps.http.servers[].routes[]
+          | ..
+          | objects
+          | select(.handle?[0]?.handler? == "reverse_proxy")
+          | .match[0].path[]
+        ]' adapted.json)
+        test "$paths" = '["/v1/models","/v1/responses","/v1/responses/compact"]'
+        echo 'service gateway eval and adapted-route assertions passed' > $out
       '';
 
       homepage = assert homepageValidation; pkgs.runCommand "homepage-tests" { } ''
