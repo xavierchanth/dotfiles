@@ -5,7 +5,7 @@
   ...
 }: let
   package = pkgs.callPackage ./package-darwin.nix {};
-  windowManagement = import ./extensions.nix {inherit inputs lib pkgs;};
+  packaged = import ./extensions.nix {inherit inputs lib pkgs;};
 in {
   imports = [inputs.vicinae.homeManagerModules.default];
 
@@ -22,7 +22,16 @@ in {
     enableChromeIntegration = false;
     enableFirefoxIntegration = false;
     launchd.enable = false;
-    extensions = [windowManagement];
-    settings = import ./settings.nix;
+    extensions = builtins.attrValues packaged.extensions;
+    settings = lib.recursiveUpdate (import ./settings.nix) {
+      providers.keepassxc.preferences = {
+        keepassxcCliPath = packaged.keepassxcCli;
+        keychainHelperPath = "${packaged.keychainHelper}/bin/vicinae-keepassxc-keychain-helper";
+        credentialMode = "password";
+        expiryMinutes = "5";
+      };
+    };
   };
+
+  home.packages = [packaged.keychainHelper];
 }

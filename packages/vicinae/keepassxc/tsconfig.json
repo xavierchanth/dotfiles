@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "include": ["src/**/*", "tests/**/*", "vicinae-env.d.ts"],
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "es2020",
+    "jsx": "react-jsx",
+    "strict": true,
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "types": ["node"]
+  }
+}

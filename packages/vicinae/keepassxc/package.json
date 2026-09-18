@@ -1,0 +1,27 @@
+{
+  "$schema": "https://raw.githubusercontent.com/vicinaehq/vicinae/v0.28.2/extra/schemas/extension.json",
+  "name": "keepassxc",
+  "title": "KeePassXC",
+  "description": "Unlock and paste credentials from a KeePassXC database",
+  "categories": ["Security", "Productivity"],
+  "license": "MIT",
+  "author": "xavierchanth",
+  "icon": "icon.svg",
+  "platforms": ["macOS"],
+  "preferences": [
+    { "name": "databasePath", "type": "file", "required": true, "title": "Database", "description": "KeePass database to open" },
+    { "name": "keepassxcCliPath", "type": "file", "required": true, "title": "KeePassXC CLI", "description": "Exact keepassxc-cli executable supplied by the Nix integration" },
+    { "name": "credentialMode", "type": "dropdown", "required": true, "default": "password", "title": "Database Credentials", "description": "Choose the credentials required by this database", "data": [{ "title": "Password", "value": "password" }, { "title": "Password and Key File", "value": "password-key-file" }, { "title": "Key File Only", "value": "key-file-only" }] },
+    { "name": "keyFilePath", "type": "file", "required": false, "title": "Key File", "description": "Required for key-file credential modes" },
+    { "name": "keychainHelperPath", "type": "file", "required": true, "title": "Keychain Helper", "description": "Exact native helper executable supplied by the Nix integration" },
+    { "name": "expiryMinutes", "type": "dropdown", "required": true, "default": "5", "title": "Lock After Inactivity", "description": "Clear the decrypted export after inactivity", "data": [{ "title": "2 minutes", "value": "2" }, { "title": "5 minutes", "value": "5" }, { "title": "10 minutes", "value": "10" }, { "title": "15 minutes", "value": "15" }] }
+  ],
+  "commands": [{ "name": "search", "title": "Search KeePassXC", "subtitle": "KeePassXC", "description": "Search and paste credentials", "mode": "view" }],
+  "scripts": {
+    "build": "vici build",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test tests/*.test.ts"
+  },
+  "dependencies": { "@vicinae/api": "0.28.2" },
+  "devDependencies": { "@types/node": "^24.9.2", "tsx": "^4.20.6", "typescript": "^5.9.2" }
+}
