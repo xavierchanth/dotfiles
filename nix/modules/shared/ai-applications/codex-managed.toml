@@ -1,0 +1,152 @@
+model = "gpt-5.6-sol"
+model_reasoning_effort = "low"
+personality = "pragmatic"
+approvals_reviewer = "guardian_subagent"
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+
+[analytics]
+enabled = false
+
+[features]
+multi_agent = true
+guardian_approval = true
+prevent_idle_sleep = true
+js_repl = false
+workspace_dependencies = true
+
+[features.network_proxy]
+enabled = true
+
+[agents]
+max_concurrent_threads_per_session = 256
+
+[plugins."github@openai-curated"]
+enabled = false
+
+[plugins."documents@openai-primary-runtime"]
+enabled = true
+
+[plugins."spreadsheets@openai-primary-runtime"]
+enabled = true
+
+[plugins."presentations@openai-primary-runtime"]
+enabled = true
+
+[plugins."pdf@openai-primary-runtime"]
+enabled = true
+
+[plugins."template-creator@openai-primary-runtime"]
+enabled = true
+
+[plugins."visualize@openai-bundled"]
+enabled = false
+
+[plugins."codex-app-tools@openai-bundled"]
+enabled = true
+
+[plugins."browser@openai-bundled"]
+enabled = true
+
+[plugins."unified-computer-use@openai-bundled"]
+enabled = true
+
+[plugins."chrome@openai-bundled"]
+enabled = true
+
+[plugins."computer-use@openai-bundled"]
+enabled = true
+
+[plugins."sites@openai-curated-remote"]
+enabled = true
+
+[desktop]
+appearanceLightCodeThemeId = "vercel"
+appearanceDarkCodeThemeId = "vercel"
+sansFontSize = 16
+composerEnterBehavior = "cmdIfMultiline"
+reviewDelivery = "detached"
+preventSleepWhileRunning = true
+keepRemoteControlAwakeWhilePluggedIn = true
+git-create-pull-request-as-draft = true
+git-pull-request-merge-method = "merge"
+git-show-sidebar-pr-icons = true
+git-pr-watch-auto-merge = true
+git-commit-instructions = """Always write commit messages using Conventional Commits.
+
+Required format:
+type(optional-scope): concise imperative summary
+
+Requirements:
+- Never write a non-semantic commit message.
+- Use a scope only when it is clearly helpful.
+- Keep scope lowercase and one to three words max.
+- Keep the summary short, specific, and action-oriented.
+- No trailing period.
+- Prefer:
+  feat, fix, refactor, docs, test, chore, perf, build, ci, style, revert
+- Mark breaking changes with ! after type or scope.
+
+Examples:
+feat(ui): add loading state to checkout button
+fix(auth): prevent refresh token reuse
+refactor(api): extract request validation middleware
+chore: bump eslint and typescript
+docs: add troubleshooting section for local dev"""
+ambient-suggestions-enabled = false
+followUpQueueMode = "queue"
+dock-icon-preference = "app-default"
+show-context-window-usage = false
+show-ultra-in-model-picker-slider = false
+enabled-reasoning-efforts = ["low", "medium", "high", "xhigh", "persistent"]
+computerUseAlwaysHidePictureInPicture = true
+realtimeVoiceScreenContextEnabled = true
+open-link-in-target-preference = "in-app-browser"
+defaultTerminalLocation = "right"
+usePointerCursors = true
+reduced-motion-preference = "on"
+appearanceDiffMarkerStyle = "color"
+appshotSoundEnabled = false
+worktree-keep-count = 5
+
+[desktop.open-in-target-preferences]
+global = "systemDefault"
+
+[desktop.external-agent-import-sync-item-types]
+SESSIONS = "original"
+CONFIG = false
+PLUGINS = false
+
+[desktop.appearanceLightChromeTheme]
+accent = "#006aff"
+contrast = 40
+ink = "#171717"
+opaqueWindows = true
+surface = "#ffffff"
+
+[desktop.appearanceLightChromeTheme.fonts]
+code = '"CommitMono Nerd Font Mono"'
+content = '"CommitMono Nerd Font Mono"'
+ui = "Geist, Inter"
+
+[desktop.appearanceLightChromeTheme.semanticColors]
+diffAdded = "#28a948"
+diffRemoved = "#eb001d"
+skill = "#a100f8"
+
+[desktop.appearanceDarkChromeTheme]
+accent = "#006efe"
+contrast = 50
+ink = "#ededed"
+opaqueWindows = true
+surface = "#000000"
+
+[desktop.appearanceDarkChromeTheme.fonts]
+code = '"CommitMono Nerd Font Mono"'
+content = '"CommitMono Nerd Font Mono"'
+ui = "Geist, Inter"
+
+[desktop.appearanceDarkChromeTheme.semanticColors]
+diffAdded = "#00ad3a"
+diffRemoved = "#f13342"
+skill = "#9540d5"

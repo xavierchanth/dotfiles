@@ -7,6 +7,12 @@ build host="":
 clean:
   ./scripts/clean.sh
 
+codex-config-diff:
+  codex-config diff --baseline "{{justfile_directory()}}/nix/modules/shared/ai-applications/codex-managed.toml" --keybindings-manifest "{{justfile_directory()}}/nix/modules/shared/ai-applications/codex-keybindings.json"
+
+codex-config-capture:
+  codex-config capture --baseline "{{justfile_directory()}}/nix/modules/shared/ai-applications/codex-managed.toml" --keybindings-manifest "{{justfile_directory()}}/nix/modules/shared/ai-applications/codex-keybindings.json"
+
 update *args:
   ./scripts/update.sh {{args}}
 
