@@ -23,11 +23,13 @@ This repository is a new port of the dotfiles setup. Treat it as the source of t
 - `nix/modules/{shared,home,darwin,nixos}/*`: reusable platform and user modules.
 - `scripts/*.sh` and `scripts/deploy`: repository-local maintenance and the packaged deploy-rs wrapper.
 - `bin/shared` and `bin/hosts/*`: commands intended for the configured user PATH.
+- `packages/<ecosystem>/<name>`: standalone source packages grouped by ecosystem; see `docs/repository-layout.md`.
 - `docs/lab/*`: lab architecture and operational runbooks.
 - `tests/*`: repository script regression tests.
 
 ## Change Approach
 
 - Make focused edits that match the existing module layout.
+- Put standalone source projects in `packages/<ecosystem>/<name>`; reserve `stow/` for files linked into a user environment.
 - Prefer adding or updating the relevant shared or host module over introducing ad hoc files.
 - If a tool is not configured yet and the `v1` branch may be useful as reference, pause and ask first.

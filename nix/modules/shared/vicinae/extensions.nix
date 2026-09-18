@@ -3,15 +3,27 @@
   lib,
   pkgs,
 }: let
-  source = lib.cleanSourceWith {
-    src = ../../../../stow/vicinae-window-management;
-    filter = path: type: let
-      name = baseNameOf path;
-    in !builtins.elem name ["node_modules" "vicinae-env.d.ts"];
-  };
+  cleanExtensionSource = source:
+    lib.cleanSourceWith {
+      src = source;
+      filter = path: type: let
+        name = baseNameOf path;
+      in
+        !(builtins.elem name [
+          "node_modules"
+          "dist"
+          "build"
+          ".raycast"
+          "vicinae-env.d.ts"
+        ]);
+    };
+
+  mkExtension = name:
+    inputs.vicinae.lib.${pkgs.stdenv.hostPlatform.system}.mkVicinaeExtension {
+      pname = name;
+      version = "0.1.0";
+      src = cleanExtensionSource ../../../../packages/vicinae/${name};
+    };
+
 in
-  inputs.vicinae.lib.${pkgs.stdenv.hostPlatform.system}.mkVicinaeExtension {
-    pname = "window-management";
-    version = "0.1.0";
-    src = source;
-  }
+  mkExtension "window-management"

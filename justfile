@@ -46,6 +46,20 @@ openwrt-apply:
   nix run .#openwrt-apply-charon -- --apply
 
 # Requires the opt-in `vicinae-dev` group on the current host. That group
-# disables the immutable extension package while this watcher owns the bundle.
-vicinae-extension-dev:
-  cd "${XDG_DATA_HOME:-$HOME/.local/share}/vicinae/dev-extensions/window-management" && npm install && npm run dev
+# disables the immutable extension package while the source watcher owns the bundle.
+vicinae-extension-dev extension="window-management":
+  #!/usr/bin/env bash
+  set -euo pipefail
+  extension={{quote(extension)}}
+  if [[ ! "$extension" =~ ^[[:alnum:]][[:alnum:]_-]*$ ]]; then
+    echo "invalid Vicinae extension name: $extension" >&2
+    exit 2
+  fi
+  package_dir="{{justfile_directory()}}/packages/vicinae/$extension"
+  if [[ ! -f "$package_dir/package.json" ]]; then
+    echo "Vicinae extension package not found: $package_dir" >&2
+    exit 2
+  fi
+  cd "$package_dir"
+  npm install
+  npm run dev
