@@ -126,6 +126,29 @@
      assert eris.system.defaults.loginwindow.autoLoginUser == null;
      assert !(builtins.elem "tailscale-app" eris.homebrew.casks);
      true;
+  darwinMaintenanceValidation = let
+    expectedSchedule = map (Hour: {
+      inherit Hour;
+      Minute = 0;
+      Day = null;
+      Month = null;
+      Weekday = null;
+    }) [ 4 5 6 ];
+    validates = name: let
+      config = (mkDarwin name).config;
+      service = config.launchd.daemons.dotfiles-nix-store-maintenance.serviceConfig;
+      activation = config.system.activationScripts.postActivation.text;
+    in assert service.StartCalendarInterval == expectedSchedule;
+       assert service.ProcessType == "Background";
+       assert service.LowPriorityIO;
+       assert service.LowPriorityBackgroundIO;
+       assert builtins.length service.ProgramArguments == 2;
+       assert lib.hasPrefix "/nix/store/" (builtins.head service.ProgramArguments);
+       assert builtins.elem "run" service.ProgramArguments;
+       assert lib.hasInfix "nix-store-maintenance request" activation;
+       assert !(lib.hasInfix "brew" (builtins.concatStringsSep " " service.ProgramArguments));
+       true;
+  in assert lib.all validates [ "nyx" "eris" ]; true;
   jioValidation = import ./tests/jio.nix { inherit lib mkHome home-manager jioPackageFor pkgsFor; };
   homepageValidation = import ./tests/homepage.nix { inherit mkNixos contextFor; };
   cliproxyapiValidation = import ./tests/cliproxyapi.nix { inherit lib mkNixos contextFor; };
@@ -151,7 +174,7 @@
      assert !(hades.systemd.services ? executor-offsite-backup);
      assert hades.systemd.timers.executor-backup.timerConfig.Unit == "executor-backup.service";
      true;
-  checked = builtins.deepSeq validKinds (assert resolverTests; assert profileTests; assert codingValidation; assert inventoryValidation; assert darwinServerValidation; assert homepageValidation; assert cliproxyapiValidation; assert cpaManagerPlusValidation; assert serviceGatewayValidation; assert tailnetGatewayDnsValidation; assert labDnsDhcpValidation; assert tailscaleRouterValidation; assert erisHeadlessValidation; assert executorValidation; true);
+  checked = builtins.deepSeq validKinds (assert resolverTests; assert profileTests; assert codingValidation; assert inventoryValidation; assert darwinServerValidation; assert darwinMaintenanceValidation; assert homepageValidation; assert cliproxyapiValidation; assert cpaManagerPlusValidation; assert serviceGatewayValidation; assert tailnetGatewayDnsValidation; assert labDnsDhcpValidation; assert tailscaleRouterValidation; assert erisHeadlessValidation; assert executorValidation; true);
   systems = [ "aarch64-darwin" "aarch64-linux" "x86_64-linux" ];
   deployNodes = attrs deployNames (name: let
     host = inventory.${name};
@@ -433,6 +456,16 @@ in builtins.seq checked (builtins.seq deployValidation {
         POSEIDON_MANIFEST = manifest "poseidon";
       } ''
         bash ${../tests/lab-update-test.sh}
+        touch $out
+      '';
+    } // lib.optionalAttrs (lib.hasSuffix "-darwin" system) {
+      nix-store-maintenance = pkgs.runCommand "nix-store-maintenance-tests" {
+        nativeBuildInputs = [ pkgs.bash pkgs.coreutils pkgs.gawk pkgs.gnugrep pkgs.shellcheck ];
+        NIX_STORE_MAINTENANCE_SCRIPT = ../scripts/nix-store-maintenance.sh;
+        DOTFILES_CLEAN_SCRIPT = ../scripts/clean.sh;
+      } ''
+        shellcheck ${../scripts/nix-store-maintenance.sh} ${../tests/nix-store-maintenance.sh}
+        bash ${../tests/nix-store-maintenance.sh}
         touch $out
       '';
     } // lib.optionalAttrs (pkgs ? uci && lib.hasSuffix "-linux" system) {

@@ -38,4 +38,5 @@
   darwin-server-remote-access = import ./modules/darwin/server-remote-access;
   darwin-desktop-apps = import ./modules/darwin/desktop-apps;
   darwin-server-brew = import ./modules/darwin/homebrew;
+  darwin-maintenance = import ./modules/darwin/maintenance;
 }
