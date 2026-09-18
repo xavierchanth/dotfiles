@@ -133,10 +133,61 @@ Use console/out-of-band access, select an older NixOS boot generation (or restor
 
 Perform the first migration attended and in this order:
 
-1. On Eris, enable **System Settings > General > Sharing > Remote Login**, restricted to the named admin user(s). Also enable **Screen Sharing**, again selecting named admin users only (not “All users”). There is currently no supported nix-darwin or Apple CLI interface for enabling Screen Sharing; do not use legacy `kickstart` hacks.
-2. From the deployment client, verify the route before activation: `ssh -J hades chant@192.168.8.202`. Resolve host-key warnings deliberately rather than bypassing verification.
-3. Deploy Eris through the inventory route: `nix run .#deploy -- eris`. Homebrew activation uses `cleanup = uninstall`, so this removes the obsolete GUI `tailscale-app`; running both implementations is unsupported. Removal and enrollment of open-source tailscaled may create a different Tailscale node identity.
-4. Once, interactively on Eris after activation, run `sudo tailscale up` and complete enrollment. Never place an auth key in Nix, Git, the Nix store, environment committed by this repository, or command-line arguments.
-5. Verify SSH and Screen Sharing after logout, then after a reboot, before relying on headless access. No automatic console login is configured.
+1. On Eris, enable **System Settings > General > Sharing > Remote Login** and
+   restrict access to `chant`. Enable **Screen Sharing** in the same pane and
+   restrict it to `chant` rather than “All users.” Apple provides no supported
+   declarative or command-line interface for this Screen Sharing setting, so it
+   remains an attended System Settings action.
+2. From the deployment client, verify the route before activation with
+   `ssh -J hades chant@192.168.8.202`. Resolve host-key warnings deliberately.
+3. Deploy Eris through the inventory route with `nix run .#deploy -- eris`.
+   Homebrew activation removes the obsolete GUI `tailscale-app`; the managed
+   open-source `tailscaled` LaunchDaemon is the only Tailscale implementation.
+4. Once after activation, run `sudo tailscale up` on Eris and complete browser
+   enrollment. Keep the existing MagicDNS hostname. Never place an auth key in
+   Nix, Git, the Nix store, or a committed command line.
+5. Verify `sudo launchctl print system/com.tailscale.tailscaled`,
+   `tailscale status`, and `sudo sshd -T`. Confirm the effective SSH policy
+   permits only `chant`, requires public-key authentication, and rejects root,
+   password, keyboard-interactive, and empty-password login.
+6. From a different machine, verify both the MagicDNS and LAN paths. Confirm an
+   authorized key can log in as `chant`; password and another local username
+   must fail.
+7. Log out of the macOS console without shutting down. At the login window,
+   verify SSH, Tailscale connectivity, and Screen Sharing login as `chant`.
+8. Reboot Eris normally. Before logging into the desktop, repeat the SSH,
+   Tailscale, and Screen Sharing checks at the login window. Confirm automatic
+   console login remains disabled.
+9. For the power-recovery gate, remove and restore AC power only when it is safe
+   for the hardware and filesystem. Confirm Eris restarts automatically. Apply
+   the FileVault decision below when judging whether remote services should be
+   reachable immediately.
 
-For Screen Sharing from outside the LAN, first create a local tunnel through Hades: `ssh -N -L 5900:192.168.8.202:5900 hades`, then connect Screen Sharing to `vnc://localhost:5900`. Screen Sharing is available at the macOS login window after normal startup, but not before FileVault has been unlocked. Boot-time Apple's OpenSSH and the open-source tailscaled LaunchDaemon likewise cannot overcome FileVault's pre-boot unlock boundary.
+For Screen Sharing from outside the LAN, reach Eris through the Hades subnet
+route after its rollout, or create a local tunnel through Hades with
+`ssh -N -L 5900:192.168.8.202:5900 hades`, then connect Screen Sharing to
+`vnc://localhost:5900`.
+
+### FileVault boundary
+
+FileVault preboot unlock happens before normal macOS boot. Apple's SSH daemon,
+the open-source Tailscale LaunchDaemon, and Screen Sharing cannot start until a
+person unlocks the FileVault volume locally after a cold boot or power loss.
+The restart-after-power-failure setting can power Eris back on, but it cannot
+cross this encryption boundary.
+
+Xavier must choose one of these operating models:
+
+- Keep FileVault and accept one local preboot unlock after every cold boot or
+  power-loss restart. Remote access becomes available afterward and remains
+  available at the macOS login window, after logout, and across ordinary
+  restarts that successfully pass unlock.
+- Disable FileVault for genuinely unattended recovery after a cold boot or
+  power loss, accepting the reduced at-rest protection.
+
+This repository never changes FileVault state automatically. Verify the chosen
+model during the reboot and power-recovery acceptance steps.
+
+Apple's supported setup paths are [Remote Login in System
+Settings](https://support.apple.com/guide/mac-help/mchlp1066/mac) and [Screen
+Sharing in System Settings](https://support.apple.com/guide/mac-help/mh11848/mac).

@@ -163,8 +163,20 @@ verify it, and request service-host approval as separate A1 actions.
    only after the loopback gateway checks pass.
 3. Apply the generated service configuration, advertise Hades, record the
    TailVIP, and verify raw TCP reaches `127.0.0.1:8443`.
-4. Point the Namecheap A records for `lab.xavierchanth.xyz` and
-   `*.lab.xavierchanth.xyz` at that TailVIP.
+4. Back up Charon's DNS configuration, capture and remove the stale
+   `xavierchanth.xyz -> 192.168.8.41` override, and retain the backup for
+   rollback. Keep the full `xavierchanth.xyz` split-DNS route, preserve
+   `charon.lab.xavierchanth.xyz -> 192.168.8.1`, and configure Charon to answer
+   both `lab.xavierchanth.xyz` and `*.lab.xavierchanth.xyz` with the TailVIP.
+   Let the bare apex use ordinary upstream DNS; do not publish public Lab
+   records or point the apex at `.1` without Xavier's explicit decision.
+5. From an off-LAN tailnet client, resolve both `lab.xavierchanth.xyz` and a
+   wildcard hostname through the operating system resolver and confirm both
+   return the TailVIP. Confirm bare `xavierchanth.xyz` follows ordinary upstream
+   DNS rather than a Charon-only override. Full-zone split DNS depends on the
+   Hades LAN route to Charon at `192.168.8.1`; follow the private DNS acceptance
+   contract in [tailscale-routing.md](tailscale-routing.md) before treating DNS
+   as accepted.
 
 ### A2: client trust
 

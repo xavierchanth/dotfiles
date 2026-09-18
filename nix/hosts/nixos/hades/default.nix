@@ -1,1 +1,1 @@
-{ groups = [ "jio" "docker-host" "mise-workstation" "plane" "homepage" "cliproxyapi" "cpa-manager-plus" "executor" "service-gateway" ]; modules = [ ./platform.nix ./service-gateway.nix ]; }
+{ groups = [ "jio" "docker-host" "mise-workstation" "plane" "homepage" "cliproxyapi" "cpa-manager-plus" "executor" "service-gateway" ]; modules = [ ./platform.nix ./service-gateway.nix ./tailscale-router.nix ]; }
