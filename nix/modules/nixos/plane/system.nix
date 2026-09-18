@@ -13,6 +13,52 @@ let
     url = "https://github.com/makeplane/plane/releases/download/${release}/docker-compose.yml";
     hash = "sha256-1M76tqKBoHSVcT/6xL3uwgZHa/+HGNMPnqZwdsekFfA=";
   };
+  proxyCaddyfileSource = pkgs.writeText "plane-${release}-proxy-Caddyfile-source" ''
+    {
+      auto_https off
+      servers {
+        max_header_size 25MB
+        client_ip_headers X-Forwarded-For X-Real-IP
+        trusted_proxies static 0.0.0.0/0
+      }
+    }
+
+    :80 {
+      request_body {
+        max_size {$FILE_SIZE_LIMIT:10485760}
+      }
+
+      redir /spaces /spaces/ permanent
+      reverse_proxy /spaces/* space:3000
+
+      redir /god-mode /god-mode/ permanent
+      reverse_proxy /god-mode/* admin:3000
+
+      reverse_proxy /live/* live:3000
+      reverse_proxy /api/* api:8000
+      reverse_proxy /auth/* api:8000
+      reverse_proxy /static/* api:8000
+
+      reverse_proxy /{$BUCKET_NAME:uploads}/* plane-minio:9000
+      reverse_proxy /{$BUCKET_NAME:uploads} plane-minio:9000
+
+      reverse_proxy /* web:3000
+    }
+  '';
+  proxyCaddyfile = pkgs.runCommand "plane-${release}-proxy-Caddyfile" {
+    nativeBuildInputs = [ pkgs.caddy pkgs.gnugrep ];
+  } ''
+    cp ${proxyCaddyfileSource} "$out"
+    if grep -Eq 'acme_ca|CERT_|^[[:space:]]*tls([[:space:]]|$)' "$out"; then
+      echo "Plane loopback proxy must not contain TLS or ACME configuration" >&2
+      exit 1
+    fi
+    grep -Fq 'auto_https off' "$out"
+    grep -Fq ':80 {' "$out"
+    grep -Fq 'max_size {$FILE_SIZE_LIMIT:10485760}' "$out"
+    grep -Fq 'reverse_proxy /live/* live:3000' "$out"
+    caddy validate --config "$out" --adapter caddyfile
+  '';
   composeFile = pkgs.runCommand "plane-${release}-docker-compose.yml" {
     nativeBuildInputs = [ pkgs.gnugrep pkgs.gnupatch ];
   } ''
@@ -29,6 +75,7 @@ let
     done
     test "$(grep -c 'host_ip: 127.0.0.1' "$out")" -eq 1
     test "$(grep -Ec '^[[:space:]]+published:' "$out")" -eq 1
+    grep -Fq '/var/lib/plane/Caddyfile:/etc/caddy/Caddyfile:ro' "$out"
   '';
   compose = "${pkgs.docker-compose}/bin/docker-compose --project-name plane --env-file ${environmentFile} --file ${composePath}";
   prepare = pkgs.writeShellApplication {
@@ -39,6 +86,7 @@ let
       install -d -m 0700 -o root -g root ${stateDirectory}
       install -d -m 0700 -o root -g root ${backupDirectory}
       install -m 0444 -o root -g root ${composeFile} ${composePath}
+      install -m 0444 -o root -g root ${proxyCaddyfile} ${stateDirectory}/Caddyfile
 
       if [ ! -e ${environmentFile} ]; then
         temporary="$(mktemp ${stateDirectory}/.plane.env.XXXXXX)"
@@ -113,13 +161,14 @@ let
       tar -C /var/lib/docker/volumes/plane_uploads/_data -czf "$temporary/uploads.tar.gz" .
       install -m 0600 ${environmentFile} "$temporary/plane.env"
       install -m 0644 ${composePath} "$temporary/docker-compose.yml"
+      install -m 0644 ${stateDirectory}/Caddyfile "$temporary/Caddyfile"
       ${compose} images > "$temporary/images.txt"
       printf '%s\n' '${release}' > "$temporary/release.txt"
       gzip -t "$temporary/postgres.sql.gz"
       tar -tzf "$temporary/uploads.tar.gz" >/dev/null
       (
         cd "$temporary"
-        sha256sum postgres.sql.gz uploads.tar.gz plane.env docker-compose.yml images.txt release.txt > SHA256SUMS
+        sha256sum postgres.sql.gz uploads.tar.gz plane.env docker-compose.yml Caddyfile images.txt release.txt > SHA256SUMS
       )
       mv "$temporary" "$destination"
       trap - EXIT
@@ -150,20 +199,21 @@ in
       User = "root";
       Group = "root";
       UMask = "0077";
-      TimeoutStartSec = "15min";
+      TimeoutStartSec = "10min";
       TimeoutStopSec = "5min";
       ExecStartPre = "${prepare}/bin/plane-prepare";
       ExecStart = "${pkgs.docker-compose}/bin/docker-compose --project-name plane --env-file ${environmentFile} --file ${composePath} up --detach --remove-orphans";
       ExecStartPost = pkgs.writeShellScript "plane-wait-healthy" ''
         set -eu
-        for attempt in $(${pkgs.coreutils}/bin/seq 1 120); do
-          status="$(${pkgs.curl}/bin/curl --silent --show-error --max-time 5 --output /dev/null --write-out '%{http_code}' --header 'Host: ${hostname}' ${upstream}${healthPath} || true)"
+        for attempt in $(${pkgs.coreutils}/bin/seq 1 30); do
+          status="$(${pkgs.curl}/bin/curl --silent --show-error --connect-timeout 1 --max-time 2 --output /dev/null --write-out '%{http_code}' --header 'Host: ${hostname}' ${upstream}${healthPath} || true)"
           if [ "$status" = 200 ]; then
             exit 0
           fi
           ${pkgs.coreutils}/bin/sleep 5
         done
         ${compose} ps >&2
+        ${compose} logs --no-color --tail 100 proxy >&2 || true
         exit 1
       '';
       ExecStop = "${pkgs.docker-compose}/bin/docker-compose --project-name plane --env-file ${environmentFile} --file ${composePath} down";
