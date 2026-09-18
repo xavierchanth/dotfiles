@@ -17,3 +17,7 @@ Prefer existing project scripts and relevant skills. Otherwise, use these defaul
 # Branch and bookmark naming
 
 Prefer `xc/<descriptive-name>` for new branches and jj bookmarks. Preserve existing names unless renaming is requested. Follow explicitly specified names and repository naming requirements.
+
+# Delegated model preferences
+
+When spawning a delegated agent or sub-agent, set its model and reasoning explicitly. Default each agent independently to `gpt-5.6-sol` with `low` reasoning. Selecting a different model does not change the reasoning default; use `low` unless another reasoning effort is explicitly requested. Supporting and nested agents reset to `gpt-5.6-sol` with `low` reasoning rather than inheriting their parent's overrides, unless another model or reasoning effort is explicitly requested.

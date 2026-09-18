@@ -1,7 +1,5 @@
 Assess whether the proposed plan is ready for implementation against the user's goal and constraints.
 
-Use the shared [model-selection defaults](../../coordination-core/references/model-selection.md): Astra with low reasoning for the primary Critic/Critiquer, and Sol with low reasoning for its supporting agents, unless an applicable explicit override selects otherwise.
-
 Challenge unsupported assumptions, consequential tradeoffs, missing interactions, unnecessary complexity, and acceptance checks that would fail to detect meaningful errors. Preserve established user decisions and distinguish a defect from a different preference. Inspect relevant source evidence when needed, expanding investigation only where it affects the judgment.
 
 Return a concise assessment:
