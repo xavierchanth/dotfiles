@@ -9,6 +9,7 @@
   openwrtProfiles = import ./openwrt/profiles.nix;
   lab = import ./lab.nix;
   openwrtRender = import ./openwrt/render.nix { inherit lab; };
+  labNetworkCutover = import ./openwrt/cutover.nix;
   registry = import ./registry.nix;
   resolve = import ./lib/groups.nix { inherit lib; };
   profileKinds = {
@@ -194,6 +195,15 @@
   flakeSource = inputs.self.outPath;
   allPackages = lib.genAttrs systems (system: let pkgs = pkgsFor system; in rec {
     openwrt-charon-uci = pkgs.writeText "charon-uci" openwrtRender;
+    lab-network-cutover-manifest = pkgs.writeText "lab-network-cutover.json" (builtins.toJSON labNetworkCutover);
+    lab-network-cutover = pkgs.writeShellApplication {
+      name = "lab-network-cutover";
+      runtimeInputs = [ pkgs.openssh pkgs.python3 ];
+      text = ''
+        export LAB_CUTOVER_MANIFEST=${lib.escapeShellArg (toString lab-network-cutover-manifest)}
+        exec ${pkgs.python3}/bin/python3 ${../scripts/lab-network-cutover.py} "$@"
+      '';
+    };
     openwrt-apply-charon = pkgs.writeShellApplication { name = "openwrt-apply-charon"; runtimeInputs = [ pkgs.coreutils pkgs.gnused pkgs.gnugrep pkgs.openssh pkgs.nix ]; text = ''
       export CHARON_RENDER="${openwrt-charon-uci}"
       ${builtins.readFile ../scripts/openwrt-apply-charon}
@@ -227,6 +237,7 @@ in builtins.seq checked (builtins.seq deployValidation {
   packages = allPackages;
   apps = lib.genAttrs systems (system: {
     deploy = { type = "app"; program = "${allPackages.${system}.deploy-cli}/bin/deploy"; meta.description = "Deploy a configured lab host with deploy-rs"; };
+    lab-network-cutover = { type = "app"; program = "${allPackages.${system}.lab-network-cutover}/bin/lab-network-cutover"; meta.description = "Prepare and operate the guarded two-phase lab network cutover"; };
     openwrt-apply-charon = { type = "app"; program = "${allPackages.${system}.openwrt-apply-charon}/bin/openwrt-apply-charon"; meta.description = "Apply the managed Charon router DNS configuration"; };
   });
   deploy = deployConfig;
@@ -385,6 +396,16 @@ in builtins.seq checked (builtins.seq deployValidation {
         SKIP_FLAKE_EVAL = 1;
       } ''
         bash ${../tests/openwrt.sh}
+        touch $out
+      '';
+      lab-network-cutover = pkgs.runCommand "lab-network-cutover-tests" {
+        nativeBuildInputs = [ pkgs.nix pkgs.python3 ];
+        TEST_ROOT = flakeSource;
+        LAB_CUTOVER_BIN = "${allPackages.${system}.lab-network-cutover}/bin/lab-network-cutover";
+        LAB_CUTOVER_MANIFEST_TEST = allPackages.${system}.lab-network-cutover-manifest;
+        PYTHONDONTWRITEBYTECODE = "1";
+      } ''
+        python3 ${../tests/lab-network-cutover.py}
         touch $out
       '';
       lab-update-safety = let
