@@ -7,15 +7,19 @@ fit best as tracked dotfiles.
 
 ## Layout
 
+See [Repository layout](docs/repository-layout.md) for the canonical directory
+boundaries and placement rules.
+
 - `flake.nix`: thin flake entrypoint and inputs; `nix/default.nix` constructs outputs from `nix/inventory.nix`.
 - `justfile`: discoverable front doors that delegate to packaged apps and existing scripts.
+- `packages/<ecosystem>/<name>`: standalone source packages grouped by their runtime or application ecosystem.
 - `nix/hosts/{darwin,nixos}/<hostname>`: host-specific system configuration.
 - `nix/home/chant`: Home Manager user configuration.
 - `nix/modules/shared`: shared modules for packages and shell tooling.
 - `nix/modules/darwin`: macOS-specific modules such as defaults, Homebrew, and
   input tooling.
 - `stow`: application configs that are linked into place during Home Manager
-  activation.
+  activation; standalone source projects belong under `packages`.
 - `bin`: shared and host-specific commands installed on the user PATH.
 - `scripts`: repository-local maintenance and deployment entrypoints.
 - `docs`: operational notes for lab hosts, strategy, and peer caching.
