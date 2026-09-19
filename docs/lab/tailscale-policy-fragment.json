@@ -1,0 +1,49 @@
+{
+  "hosts": {
+    "home-lan": "192.168.8.0/24"
+  },
+  "tagOwners": {
+    "tag:lab-host": ["autogroup:owner"]
+  },
+  "autoApprovers": {
+    "routes": {
+      "192.168.8.0/24": ["tag:lab-host"]
+    },
+    "exitNode": ["tag:lab-host"],
+    "services": {
+      "svc:lab": ["tag:lab-host"]
+    }
+  },
+  "grants": [
+    {
+      "src": ["autogroup:owner"],
+      "dst": ["tag:lab-host"],
+      "ip": ["tcp:22"]
+    },
+    {
+      "src": ["autogroup:owner"],
+      "dst": ["home-lan"],
+      "via": ["tag:lab-host"],
+      "ip": ["*"]
+    },
+    {
+      "src": ["autogroup:owner"],
+      "dst": ["autogroup:internet"],
+      "via": ["tag:lab-host"],
+      "ip": ["*"]
+    },
+    {
+      "src": ["autogroup:owner"],
+      "dst": ["svc:lab"],
+      "ip": ["tcp:443"]
+    }
+  ],
+  "ssh": [
+    {
+      "action": "accept",
+      "src": ["autogroup:owner"],
+      "dst": ["tag:lab-host"],
+      "users": ["chant"]
+    }
+  ]
+}

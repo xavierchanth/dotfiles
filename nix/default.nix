@@ -130,6 +130,8 @@
   cliproxyapiValidation = import ./tests/cliproxyapi.nix { inherit lib mkNixos contextFor; };
   cpaManagerPlusValidation = import ./tests/cpa-manager-plus.nix { inherit lib mkNixos contextFor; };
   serviceGatewayValidation = import ./tests/service-gateway.nix { inherit lib mkNixos contextFor; };
+  tailscaleRouterValidation = import ./tests/tailscale-router.nix { inherit lib mkNixos; };
+  erisHeadlessValidation = import ./tests/eris-headless.nix { inherit lib mkDarwin; };
   executorValidation = let
     hades = (mkNixos "hades").config;
     executor = hades.dotfiles.executor;
@@ -146,7 +148,7 @@
      assert !(hades.systemd.services ? executor-offsite-backup);
      assert hades.systemd.timers.executor-backup.timerConfig.Unit == "executor-backup.service";
      true;
-  checked = builtins.deepSeq validKinds (assert resolverTests; assert profileTests; assert codingValidation; assert inventoryValidation; assert darwinServerValidation; assert homepageValidation; assert cliproxyapiValidation; assert cpaManagerPlusValidation; assert serviceGatewayValidation; assert executorValidation; true);
+  checked = builtins.deepSeq validKinds (assert resolverTests; assert profileTests; assert codingValidation; assert inventoryValidation; assert darwinServerValidation; assert homepageValidation; assert cliproxyapiValidation; assert cpaManagerPlusValidation; assert serviceGatewayValidation; assert tailscaleRouterValidation; assert erisHeadlessValidation; assert executorValidation; true);
   systems = [ "aarch64-darwin" "aarch64-linux" "x86_64-linux" ];
   deployNodes = attrs deployNames (name: let
     host = inventory.${name};
@@ -290,6 +292,14 @@ in builtins.seq checked (builtins.seq deployValidation {
         ]' adapted.json)
         test "$paths" = '["/v1/models","/v1/responses","/v1/responses/compact"]'
         echo 'service gateway eval and adapted-route assertions passed' > $out
+      '';
+
+      tailscale-router = assert tailscaleRouterValidation; pkgs.runCommand "tailscale-router-tests" { } ''
+        echo 'Tailscale router eval assertions passed' > $out
+      '';
+
+      eris-headless = assert erisHeadlessValidation; pkgs.runCommand "eris-headless-tests" { } ''
+        echo 'Eris headless eval assertions passed' > $out
       '';
 
       homepage = assert homepageValidation; pkgs.runCommand "homepage-tests" { } ''
