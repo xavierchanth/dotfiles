@@ -6,11 +6,9 @@ A Team's responsibility has an explicit scope. Project-scoped Teams serve a sema
 
 Prefer a short topic or responsibility followed by “Team.” Rely on the containing Project for organization and Project context; add a qualifier when it resolves genuine ambiguity. Keep workflow choices such as DIVE in the assignment rather than the title, and honor an explicitly requested name.
 
-Names can repeat across Projects. Resolve the intended Team using its live Project identity, responsibility, and recent context, then use its task ID and host when needed for messages or actions. A title alone is not a unique address. If the conversation already establishes the Project, use that context without asking again. Otherwise inspect Project context and ask one concise clarification only when multiple candidates remain plausible. In cross-Project reports, include the Project alongside the short Team name when useful. For projectless Teams or duplicates within one Project, use assignment context and task identity to finish disambiguation.
+Names can repeat across Projects. Identify the intended Team using its live Project identity, responsibility, and recent context. If the conversation already establishes the Project, use that context without asking again. Otherwise inspect Project context and ask one concise clarification only when multiple candidates remain plausible. In cross-Project reports, include the Project alongside the short Team name when useful. For projectless Teams or duplicates within one Project, use assignment context to finish disambiguation.
 
 ## Repository-wide version control
-
-Prefer the Project's existing workspace for new Teams, sharing the checkout with other contributors. When isolation would materially help, recommend it with the benefit and tradeoff; create or select a separate Codex worktree or JJ workspace only after Xavier explicitly agrees. Carry that approval within its agreed scope. Explicitly select the existing-workspace/local environment in task-creation tools unless isolation is approved.
 
 For a repository with one working Team, prefer letting that Team handle its own version-control work within its existing authority. Once multiple working Teams contribute changes, establish or reuse one Version Control Team for that repository. Count contributing Teams across saved Projects, including work in a Project's additional repositories; temporary Workers within a Team do not independently trigger this transition.
 

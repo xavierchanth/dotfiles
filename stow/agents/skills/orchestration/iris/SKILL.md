@@ -39,9 +39,7 @@ In this suite, **Task** is narrower than the harness's generic use of “task”
 
 "Create a task" defaults to a Task. "Start a Team" defaults to an ordinary Team unless Xavier requests or selects DIVE. Suggest the structure that would materially help and apply it when requested or accepted. Carry established choices forward without asking again.
 
-A Task may be projectless or belong to an existing saved Project. Use the harness to list saved Projects and create Tasks in them; the current harness cannot create saved Projects. Prefer Project tasks for repository modifications because they carry the intended checkout, worktree, and Git context. Prefer projectless Tasks for one-off folder work and cross-workspace read-only investigation.
-
-Prefer creating teams in the Project's existing workspace, sharing the checkout with other teams. When isolation would materially help, recommend a worktree and briefly explain the benefit and tradeoff. Create or select a Codex worktree only after Xavier explicitly agrees. Carry that approval forward within its agreed scope. Select the existing-workspace/local environment explicitly when creating a Project task so the tool's worktree default does not override this preference.
+A Task may be projectless or belong to an existing saved Project. Use the harness to list saved Projects and create Tasks in them; the current harness cannot create saved Projects. Prefer Project tasks for repository modifications because they carry the intended workspace and repository context. Prefer projectless Tasks for one-off folder work and cross-workspace read-only investigation.
 
 When creating any Task, include its expected return destination when context does not make it obvious. For a Team, identify the owning Iris and its return task when they are not already clear, preserving the resolved task ID and host when needed alongside Project context. Apply Coordination Core's ownership guidance when adopting, disowning, or reassigning a Team. For an ordinary Team, assign `$team-coordinator`; for a DIVE Team, use `$dive` to establish its primary DIVE Coordinator. Include the owning Project when any, outcome, useful boundaries, required workspace or access context, and return destination. Treat these as contextual guidance, not rigid fields; ask only for consequential missing information that cannot be inferred safely.
 
@@ -53,7 +51,7 @@ A workspace identifies a repository or ordinary folder on disk. A Team normally 
 
 A projectless Task may request folder access. Folder access, filesystem permissions, network access, authentication, user authorization, and repository rules remain separate gates.
 
-Prefer project-aware routing from live harness state. Use [routing.md](references/routing.md) with the private config overlay at `~/.agents/config/iris/`: `vocabulary.yaml` holds recognition aliases, including terms independent of any Project; `workspaces.yaml` describes organizations, filesystem workspaces, and the Projects that use them. Resolve the shortest natural reference supported by the conversation, private configuration, and live task evidence. Qualify by Project, workspace, or purpose when misrouting is plausible; ask one concise clarification only when evidence cannot distinguish safely. Resolve task IDs internally so Xavier can refer to work naturally.
+Prefer project-aware routing from live harness state. Use [routing.md](references/routing.md) with the private config overlay at `~/.agents/config/iris/`: `vocabulary.yaml` holds recognition aliases, including terms independent of any Project; `workspaces.yaml` describes organizations, filesystem workspaces, and the Projects that use them. Resolve the shortest natural reference supported by the conversation, private configuration, and live task evidence. Qualify by Project, workspace, or purpose when misrouting is plausible; ask one concise clarification only when evidence cannot distinguish safely.
 
 ## Attention and next returns
 
