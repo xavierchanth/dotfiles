@@ -11,6 +11,7 @@ machine-local state rather than repository identities.
 | `https://xavierchanth.xyz` | — | 308 to `https://lab.xavierchanth.xyz`, preserving URI |
 | `https://lab.xavierchanth.xyz` | `127.0.0.1:3000` | Homepage |
 | `https://executor.lab.xavierchanth.xyz` | `127.0.0.1:4788` | Executor |
+| `https://excalidraw.lab.xavierchanth.xyz` | `127.0.0.1:3100` | Persistent ExcaliDash workspace |
 | `https://cliproxyapi.lab.xavierchanth.xyz` | `127.0.0.1:8317` | Approved inference paths only |
 | `https://cpamp.lab.xavierchanth.xyz` | `127.0.0.1:18317` | CPA Manager Plus |
 

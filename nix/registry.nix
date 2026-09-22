@@ -22,6 +22,7 @@
   lab-dns-dhcp = import ./modules/nixos/lab-dns-dhcp;
   podman-host = import ./modules/nixos/podman-host;
   homepage = import ./modules/nixos/homepage;
+  excalidraw = import ./modules/nixos/excalidraw;
   cliproxyapi = import ./modules/nixos/cliproxyapi;
   cpa-manager-plus = import ./modules/nixos/cpa-manager-plus;
   executor = import ./modules/nixos/executor;

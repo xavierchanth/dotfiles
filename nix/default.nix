@@ -151,6 +151,7 @@
   in assert lib.all validates [ "nyx" "eris" ]; true;
   jioValidation = import ./tests/jio.nix { inherit lib mkHome home-manager jioPackageFor pkgsFor; };
   homepageValidation = import ./tests/homepage.nix { inherit lib mkNixos contextFor; };
+  excalidrawValidation = import ./tests/excalidraw.nix { inherit lib mkNixos contextFor; };
   cliproxyapiValidation = import ./tests/cliproxyapi.nix { inherit lib mkNixos contextFor; };
   cpaManagerPlusValidation = import ./tests/cpa-manager-plus.nix { inherit lib mkNixos contextFor; };
   serviceGatewayValidation = import ./tests/service-gateway.nix { inherit lib mkNixos contextFor; };
@@ -191,7 +192,7 @@
      assert !(hades.systemd.services ? executor-offsite-backup);
      assert hades.systemd.timers.executor-backup.timerConfig.Unit == "executor-backup.service";
      true;
-  checked = builtins.deepSeq validKinds (assert !(registry ? plane); assert resolverTests; assert profileTests; assert codingValidation; assert inventoryValidation; assert darwinServerValidation; assert darwinMaintenanceValidation; assert homepageValidation; assert cliproxyapiValidation; assert cpaManagerPlusValidation; assert serviceGatewayValidation; assert tailnetGatewayDnsValidation; assert labDnsDhcpValidation; assert tailscaleRouterValidation; assert erisHeadlessValidation; assert podmanHostValidation; assert executorValidation; true);
+  checked = builtins.deepSeq validKinds (assert !(registry ? plane); assert resolverTests; assert profileTests; assert codingValidation; assert inventoryValidation; assert darwinServerValidation; assert darwinMaintenanceValidation; assert homepageValidation; assert excalidrawValidation; assert cliproxyapiValidation; assert cpaManagerPlusValidation; assert serviceGatewayValidation; assert tailnetGatewayDnsValidation; assert labDnsDhcpValidation; assert tailscaleRouterValidation; assert erisHeadlessValidation; assert podmanHostValidation; assert executorValidation; true);
   systems = [ "aarch64-darwin" "aarch64-linux" "x86_64-linux" ];
   deployNodes = attrs deployNames (name: let
     host = inventory.${name};
@@ -377,6 +378,10 @@ in builtins.seq checked (builtins.seq deployValidation {
 
       podman-host = assert podmanHostValidation && executorValidation; pkgs.runCommand "podman-host-tests" { } ''
         echo 'Podman host and Executor eval assertions passed' > $out
+      '';
+
+      excalidraw = assert excalidrawValidation; pkgs.runCommand "excalidraw-tests" { } ''
+        echo 'ExcaliDash persistent service eval assertions passed' > $out
       '';
 
       cliproxyapi = let

@@ -19,6 +19,7 @@ assert builtins.attrNames cfg.reservations == [ "eris" "hades" "poseidon" "zeus"
 assert cfg.records."eris.lab.xavierchanth.xyz" == "192.168.17.5";
 assert !(cfg.records ? "lab.xavierchanth.xyz");
 assert !(cfg.records ? "executor.lab.xavierchanth.xyz");
+assert !(cfg.records ? "excalidraw.lab.xavierchanth.xyz");
 assert lib.hasInfix "lab-dns-dhcp-prepare" prepare;
 assert authorityPackage != null;
 assert lib.hasInfix "lab-dhcp-authority-watchdog" hades.systemd.services.lab-dhcp-authority-watchdog.serviceConfig.ExecStart;

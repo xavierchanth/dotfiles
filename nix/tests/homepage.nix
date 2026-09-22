@@ -10,7 +10,7 @@ assert homepage.image == "ghcr.io/gethomepage/homepage:v2.3.0@sha256:f8202766545
 assert homepage.bind == "127.0.0.1:3000";
 assert homepage.healthUrl == "http://127.0.0.1:3000/api/healthcheck";
 assert homepage.allowedHosts == [ "lab.xavierchanth.xyz" ];
-assert homepage.serviceNames == [ "Executor" ];
+assert homepage.serviceNames == [ "Executor" "Excalidraw" ];
 assert container.serviceName == "homepage";
 assert container.image == homepage.image;
 assert container.ports == [ "127.0.0.1:3000:3000" ];

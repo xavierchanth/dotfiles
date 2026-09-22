@@ -29,6 +29,12 @@ let
             href = "https://executor.lab.xavierchanth.xyz";
           };
         }
+        {
+          Excalidraw = {
+            description = "Persistent private diagram workspace";
+            href = "https://excalidraw.lab.xavierchanth.xyz";
+          };
+        }
       ];
     }
   ];
@@ -73,7 +79,7 @@ in
     serviceNames = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       readOnly = true;
-      default = [ "Executor" ];
+      default = [ "Executor" "Excalidraw" ];
       description = "Names in the generated Homepage service catalog.";
     };
   };

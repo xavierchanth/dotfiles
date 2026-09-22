@@ -6,7 +6,7 @@ let
   unit = hades.systemd.services.tailnet-gateway-dns;
 in
 assert builtins.elem "tailnet-gateway-dns" (contextFor "hades").groupNames;
-assert dns.names == [ "xavierchanth.xyz" "lab.xavierchanth.xyz" "executor.lab.xavierchanth.xyz" "cliproxyapi.lab.xavierchanth.xyz" "cpamp.lab.xavierchanth.xyz" ];
+assert dns.names == [ "xavierchanth.xyz" "lab.xavierchanth.xyz" "executor.lab.xavierchanth.xyz" "excalidraw.lab.xavierchanth.xyz" "cliproxyapi.lab.xavierchanth.xyz" "cpamp.lab.xavierchanth.xyz" ];
 assert dns.privateZone == "lab.xavierchanth.xyz";
 assert lib.all (name: builtins.elem name dns.names) (builtins.attrNames gateway.routes);
 assert lib.all (name: builtins.elem name dns.names) (builtins.attrNames gateway.redirects);

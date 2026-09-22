@@ -22,6 +22,15 @@
     upstreamUnit = "executor.service";
   };
 
+  dotfiles.serviceGateway.routes."excalidraw.lab.xavierchanth.xyz" = {
+    upstream = {
+      address = "127.0.0.1";
+      port = 3100;
+    };
+    healthPath = "/";
+    upstreamUnit = "excalidraw.service";
+  };
+
   dotfiles.serviceGateway.routes."cliproxyapi.lab.xavierchanth.xyz" = {
     upstream = {
       address = "127.0.0.1";
