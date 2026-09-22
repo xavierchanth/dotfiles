@@ -20,7 +20,7 @@
   service-gateway = import ./modules/nixos/service-gateway;
   tailnet-gateway-dns = import ./modules/nixos/tailnet-gateway-dns;
   lab-dns-dhcp = import ./modules/nixos/lab-dns-dhcp;
-  docker-host = import ./modules/nixos/docker-host;
+  podman-host = import ./modules/nixos/podman-host;
   homepage = import ./modules/nixos/homepage;
   cliproxyapi = import ./modules/nixos/cliproxyapi;
   cpa-manager-plus = import ./modules/nixos/cpa-manager-plus;

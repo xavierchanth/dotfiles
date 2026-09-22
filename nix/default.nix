@@ -158,15 +158,32 @@
   labDnsDhcpValidation = import ./tests/lab-dns-dhcp.nix { inherit lib mkNixos contextFor; };
   tailscaleRouterValidation = import ./tests/tailscale-router.nix { inherit lib mkNixos; };
   erisHeadlessValidation = import ./tests/eris-headless.nix { inherit lib mkDarwin; };
+  podmanHostValidation = let
+    hades = (mkNixos "hades").config;
+  in assert hades.virtualisation.oci-containers.backend == "podman";
+     assert hades.virtualisation.podman.enable;
+     assert hades.virtualisation.podman.defaultNetwork.settings.dns_enabled;
+     assert !hades.virtualisation.docker.enable;
+     assert !hades.virtualisation.podman.dockerCompat;
+     assert !hades.virtualisation.podman.dockerSocket.enable;
+     assert builtins.elem "podman-host" (contextFor "hades").groupNames;
+     assert !(builtins.elem "docker-host" (contextFor "hades").groupNames);
+     true;
   executorValidation = let
     hades = (mkNixos "hades").config;
     executor = hades.dotfiles.executor;
+    container = hades.virtualisation.oci-containers.containers.executor;
   in assert executor.image == "ghcr.io/usefulsoftwareco/executor-selfhost:v1.6.8@sha256:527e014ce0641e9d569314561fba2a37b872ffd5074471b9bc48b66611ecb090";
      assert executor.bind == "127.0.0.1:4788";
      assert executor.webBaseUrl == "https://executor.lab.xavierchanth.xyz";
      assert executor.dataDirectory == "/var/lib/executor/data";
      assert executor.healthUrl == "http://127.0.0.1:4788/api/health";
      assert !executor.allowLocalNetwork && !executor.allowStdioMcp;
+     assert container.serviceName == "executor";
+     assert container.image == executor.image;
+     assert container.ports == [ "127.0.0.1:4788:4788" ];
+     assert container.volumes == [ "/var/lib/executor/data:/data" ];
+     assert container.podman.sdnotify == "healthy";
      assert builtins.elem "executor.service" hades.dotfiles.labUpdate.requiredUnits;
      assert !executor.offsiteBackup.enable;
      assert !(builtins.elem "executor-backup-preflight.service" hades.systemd.services.executor.requires);
@@ -174,7 +191,7 @@
      assert !(hades.systemd.services ? executor-offsite-backup);
      assert hades.systemd.timers.executor-backup.timerConfig.Unit == "executor-backup.service";
      true;
-  checked = builtins.deepSeq validKinds (assert !(registry ? plane); assert resolverTests; assert profileTests; assert codingValidation; assert inventoryValidation; assert darwinServerValidation; assert darwinMaintenanceValidation; assert homepageValidation; assert cliproxyapiValidation; assert cpaManagerPlusValidation; assert serviceGatewayValidation; assert tailnetGatewayDnsValidation; assert labDnsDhcpValidation; assert tailscaleRouterValidation; assert erisHeadlessValidation; assert executorValidation; true);
+  checked = builtins.deepSeq validKinds (assert !(registry ? plane); assert resolverTests; assert profileTests; assert codingValidation; assert inventoryValidation; assert darwinServerValidation; assert darwinMaintenanceValidation; assert homepageValidation; assert cliproxyapiValidation; assert cpaManagerPlusValidation; assert serviceGatewayValidation; assert tailnetGatewayDnsValidation; assert labDnsDhcpValidation; assert tailscaleRouterValidation; assert erisHeadlessValidation; assert podmanHostValidation; assert executorValidation; true);
   systems = [ "aarch64-darwin" "aarch64-linux" "x86_64-linux" ];
   deployNodes = attrs deployNames (name: let
     host = inventory.${name};
@@ -356,6 +373,10 @@ in builtins.seq checked (builtins.seq deployValidation {
 
       homepage = assert homepageValidation; pkgs.runCommand "homepage-tests" { } ''
         echo 'homepage eval assertions passed' > $out
+      '';
+
+      podman-host = assert podmanHostValidation && executorValidation; pkgs.runCommand "podman-host-tests" { } ''
+        echo 'Podman host and Executor eval assertions passed' > $out
       '';
 
       cliproxyapi = let

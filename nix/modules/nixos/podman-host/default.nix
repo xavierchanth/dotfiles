@@ -1,5 +1,5 @@
 {
-  name = "docker-host";
+  name = "podman-host";
   platforms = [ "nixos" ];
   requires = [ "ssh-server" "tailscale" ];
   nixos = [ ./system.nix ];
