@@ -23,11 +23,16 @@ def private_json(path, expected_uid, expected_gid):
 
 def validate_tailnet(args):
     state = private_json(args.state, args.expected_uid, args.expected_gid)
-    required = {"version", "service", "resolverAddress", "address", "expiresAt", "preparedState"}
+    required = {
+        "version", "service", "resolverAddress", "address", "expiresAt",
+        "nodeIdentity", "desiredConfigSha256",
+    }
     if set(state) != required or state["version"] != 1 or state["service"] != "svc:lab":
         raise ValueError("invalid svc:lab state schema")
-    if not isinstance(state["preparedState"], str) or len(state["preparedState"]) < 16:
-        raise ValueError("invalid prepared state")
+    if not isinstance(state["nodeIdentity"], str) or not state["nodeIdentity"]:
+        raise ValueError("invalid node identity")
+    if not re.fullmatch(r"[0-9a-f]{64}", state.get("desiredConfigSha256", "")):
+        raise ValueError("invalid desired config digest")
     if not isinstance(state["expiresAt"], int) or state["expiresAt"] <= args.now:
         raise ValueError("expired svc:lab state")
     resolver = ipaddress.IPv4Address(state["resolverAddress"])

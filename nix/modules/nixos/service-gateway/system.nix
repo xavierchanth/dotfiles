@@ -20,10 +20,13 @@ let
   serviceConfigFile = builtins.toFile "lab-serve-config.json" (builtins.toJSON {
     version = "0.0.1";
     services."svc:lab" = {
-      advertised = false;
+      advertised = true;
       endpoints."tcp:443" = serviceTarget;
     };
   });
+  serviceStateFile = "/var/lib/tailnet-gateway-dns/svc-lab-state.json";
+  serviceDrainMarker = "/var/lib/tailnet-gateway-dns/svc-lab-drained";
+  serviceLockFile = "/var/lib/tailnet-gateway-dns/operation.lock";
   caRootCertificate = "${config.services.caddy.dataDir}/.local/share/caddy/pki/authorities/local/root.crt";
   caRootPrivateKey = "${config.services.caddy.dataDir}/.local/share/caddy/pki/authorities/local/root.key";
   caFingerprintFile = "${config.services.caddy.dataDir}/.dotfiles-root-ca.sha256";
@@ -96,6 +99,26 @@ let
       printf '%s  %s\n' "$fingerprint" "$destination"
     '';
   };
+  serviceLifecycle = pkgs.writeShellApplication {
+    name = "tailscale-service-gateway";
+    runtimeInputs = [ pkgs.coreutils pkgs.curl pkgs.python3 pkgs.systemd pkgs.tailscale ];
+    text = ''
+      export SVC_LAB_CURL=${lib.escapeShellArg "${pkgs.curl}/bin/curl"}
+      export SVC_LAB_SYSTEMCTL=${lib.escapeShellArg "${pkgs.systemd}/bin/systemctl"}
+      export SVC_LAB_TAILSCALE=${lib.escapeShellArg "${pkgs.tailscale}/bin/tailscale"}
+      exec ${pkgs.python3}/bin/python3 ${../../../../scripts/tailscale-service-gateway.py} "$@" \
+        --config ${lib.escapeShellArg serviceConfigFile} \
+        --receipt ${lib.escapeShellArg serviceStateFile} \
+        --drain-marker ${lib.escapeShellArg serviceDrainMarker} \
+        --lock-file ${lib.escapeShellArg serviceLockFile} \
+        --target ${lib.escapeShellArg serviceTarget} \
+        --bind-address ${lib.escapeShellArg cfg.bindAddress} \
+        --port ${toString cfg.httpsPort} \
+        --health-host lab.xavierchanth.xyz \
+        --health-path /api/healthcheck \
+        --ca-certificate ${lib.escapeShellArg caRootCertificate}
+    '';
+  };
 in
 {
   options.dotfiles.serviceGateway = {
@@ -114,6 +137,9 @@ in
       port = mkOption { type = types.port; readOnly = true; default = 443; };
       target = mkOption { type = types.str; readOnly = true; default = serviceTarget; };
       configFile = mkOption { type = types.path; readOnly = true; default = serviceConfigFile; };
+      stateFile = mkOption { type = types.str; readOnly = true; default = serviceStateFile; };
+      drainMarker = mkOption { type = types.str; readOnly = true; default = serviceDrainMarker; };
+      lifecyclePackage = mkOption { type = types.package; readOnly = true; default = serviceLifecycle; };
     };
     redirects = mkOption {
       type = types.attrsOf (types.strMatching "^https://[a-z0-9]([a-z0-9.-]*[a-z0-9])?$");
@@ -230,8 +256,52 @@ in
       serviceConfig.ExecStartPost = "${caAnchor}/bin/service-gateway-ca-anchor";
     };
 
-    environment.systemPackages = [ caFingerprint caExport ];
+    systemd.services.svc-lab = {
+      description = "Declaratively reconcile the svc:lab Tailscale Service host";
+      wantedBy = [ "multi-user.target" ];
+      wants = [ "network-online.target" "tailscaled-autoconnect.service" ];
+      after = [ "network-online.target" "tailscaled.service" "tailscaled-autoconnect.service" "caddy.service" ];
+      requires = [ "tailscaled.service" "caddy.service" ];
+      partOf = [ "tailscaled.service" ];
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+        TimeoutStartSec = "2min";
+        Restart = "on-failure";
+        RestartSec = "30s";
+        ExecStart = "${serviceLifecycle}/bin/tailscale-service-gateway reconcile";
+        ExecReload = "${serviceLifecycle}/bin/tailscale-service-gateway reconcile";
+      };
+    };
 
-    dotfiles.labUpdate.requiredUnits = [ "caddy.service" ];
+    systemd.services.svc-lab-reconcile = {
+      description = "Refresh svc:lab live state and private DNS receipt";
+      wants = [ "network-online.target" ];
+      after = [ "network-online.target" "tailscaled.service" "caddy.service" ];
+      requires = [ "tailscaled.service" "caddy.service" ];
+      serviceConfig = {
+        Type = "oneshot";
+        TimeoutStartSec = "2min";
+        ExecStart = "${serviceLifecycle}/bin/tailscale-service-gateway reconcile";
+        Restart = "on-failure";
+        RestartSec = "30s";
+      };
+    };
+
+    systemd.timers.svc-lab-reconcile = {
+      wantedBy = [ "timers.target" ];
+      timerConfig = {
+        OnBootSec = "2min";
+        OnUnitActiveSec = "5min";
+        RandomizedDelaySec = "30s";
+        Unit = "svc-lab-reconcile.service";
+      };
+    };
+
+    systemd.services.tailscaled.wants = [ "svc-lab.service" ];
+
+    environment.systemPackages = [ caFingerprint caExport serviceLifecycle ];
+
+    dotfiles.labUpdate.requiredUnits = [ "caddy.service" "svc-lab.service" ];
   };
 }

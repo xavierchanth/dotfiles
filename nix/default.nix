@@ -150,7 +150,7 @@
        true;
   in assert lib.all validates [ "nyx" "eris" ]; true;
   jioValidation = import ./tests/jio.nix { inherit lib mkHome home-manager jioPackageFor pkgsFor; };
-  homepageValidation = import ./tests/homepage.nix { inherit mkNixos contextFor; };
+  homepageValidation = import ./tests/homepage.nix { inherit lib mkNixos contextFor; };
   cliproxyapiValidation = import ./tests/cliproxyapi.nix { inherit lib mkNixos contextFor; };
   cpaManagerPlusValidation = import ./tests/cpa-manager-plus.nix { inherit lib mkNixos contextFor; };
   serviceGatewayValidation = import ./tests/service-gateway.nix { inherit lib mkNixos contextFor; };
@@ -174,7 +174,7 @@
      assert !(hades.systemd.services ? executor-offsite-backup);
      assert hades.systemd.timers.executor-backup.timerConfig.Unit == "executor-backup.service";
      true;
-  checked = builtins.deepSeq validKinds (assert resolverTests; assert profileTests; assert codingValidation; assert inventoryValidation; assert darwinServerValidation; assert darwinMaintenanceValidation; assert homepageValidation; assert cliproxyapiValidation; assert cpaManagerPlusValidation; assert serviceGatewayValidation; assert tailnetGatewayDnsValidation; assert labDnsDhcpValidation; assert tailscaleRouterValidation; assert erisHeadlessValidation; assert executorValidation; true);
+  checked = builtins.deepSeq validKinds (assert !(registry ? plane); assert resolverTests; assert profileTests; assert codingValidation; assert inventoryValidation; assert darwinServerValidation; assert darwinMaintenanceValidation; assert homepageValidation; assert cliproxyapiValidation; assert cpaManagerPlusValidation; assert serviceGatewayValidation; assert tailnetGatewayDnsValidation; assert labDnsDhcpValidation; assert tailscaleRouterValidation; assert erisHeadlessValidation; assert executorValidation; true);
   systems = [ "aarch64-darwin" "aarch64-linux" "x86_64-linux" ];
   deployNodes = attrs deployNames (name: let
     host = inventory.${name};
@@ -308,7 +308,9 @@ in builtins.seq checked (builtins.seq deployValidation {
           }
         '';
       in assert serviceGatewayValidation; pkgs.runCommand "service-gateway-tests" {
-        nativeBuildInputs = [ pkgs.caddy pkgs.jq ];
+        nativeBuildInputs = [ pkgs.caddy pkgs.jq pkgs.python3 ];
+        SVC_LAB_CONTROLLER = ../scripts/tailscale-service-gateway.py;
+        PYTHONDONTWRITEBYTECODE = "1";
       } ''
         caddy adapt --config ${caddyfile} --adapter caddyfile > adapted.json
         handlers=$(jq -c '[
@@ -327,6 +329,7 @@ in builtins.seq checked (builtins.seq deployValidation {
           | .match[0].path[]
         ]' adapted.json)
         test "$paths" = '["/v1/models","/v1/responses","/v1/responses/compact"]'
+        python3 ${../tests/tailscale-service-gateway.py}
         echo 'service gateway eval and adapted-route assertions passed' > $out
       '';
 

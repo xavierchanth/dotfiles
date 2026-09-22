@@ -22,15 +22,6 @@
     upstreamUnit = "executor.service";
   };
 
-  dotfiles.serviceGateway.routes."plane.lab.xavierchanth.xyz" = {
-    upstream = {
-      address = "127.0.0.1";
-      port = 8080;
-    };
-    healthPath = "/";
-    upstreamUnit = "plane.service";
-  };
-
   dotfiles.serviceGateway.routes."cliproxyapi.lab.xavierchanth.xyz" = {
     upstream = {
       address = "127.0.0.1";

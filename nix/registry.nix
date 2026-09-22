@@ -25,7 +25,6 @@
   cliproxyapi = import ./modules/nixos/cliproxyapi;
   cpa-manager-plus = import ./modules/nixos/cpa-manager-plus;
   executor = import ./modules/nixos/executor;
-  plane = import ./modules/nixos/plane;
   cage-desktop = import ./modules/nixos/cage-desktop;
   server-power = import ./modules/nixos/server-power;
   maintenance = import ./modules/nixos/maintenance;

@@ -11,6 +11,10 @@ This repository is a new port of the dotfiles setup. Treat it as the source of t
 - Prefer reproducible, cross-machine configuration. Do not hardcode machine-specific paths, usernames, home directories, or profile locations when a Nix value can derive them.
 - When a path depends on a package or system context, derive it from Nix instead of spelling it literally. Example: prefer `${pkgs.tmux}/bin/tmux` or `${config.home.homeDirectory}` over hardcoded paths like `/etc/profiles/per-user/chant/bin/tmux` or `/Users/chant/...`.
 
+## Tailscale Administration
+
+Prefer normal interactive Tailscale sign-in and manual admin-console changes for tailnet-wide configuration, including device tags, service definitions and approvals, DNS settings, and access policy. Dotfiles may declaratively configure each machine's local Tailscale client and the services it advertises. Introduce OAuth credentials or automated tailnet-wide mutations only when Xavier explicitly approves automation for a specific recurring need.
+
 ## Repo Shape
 
 - `flake.nix` and `flake.lock`: thin flake entrypoint and pinned inputs.

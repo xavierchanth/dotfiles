@@ -13,7 +13,7 @@ Executor is the Lab's MCP gateway and capability manager. The pinned
 - Caddy proxies the stable service surface to the loopback listener and
   preserves authentication and streaming headers.
 - Executor owns MCP registration, credentials, tool policy, and capability
-  lifecycle. Cage, Plane, and future services remain behind Executor rather
+  lifecycle. Cage and future services remain behind Executor rather
   than becoming direct agent dependencies.
 - Local-network access and stdio MCP launch are disabled until their adapter
   gates below are satisfied.
@@ -98,7 +98,7 @@ is made available to an agent:
 4. A harmless read-only end-to-end call through the stable `/mcp` endpoint.
 5. Audit evidence that the client receives only the intended scoped tools.
 
-Plane is a human-visible work ledger, not an orchestration service. Cage and
-JIO remain independently owned products; required product changes return to
-their teams. Enabling local-network targets or per-task stdio MCP processes is
-a separate reviewed change after isolation and lifecycle behavior are proven.
+Cage and JIO remain independently owned products; required product changes
+return to their teams. Enabling local-network targets or per-task stdio MCP
+processes is a separate reviewed change after isolation and lifecycle behavior
+are proven.

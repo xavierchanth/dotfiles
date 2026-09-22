@@ -10,6 +10,7 @@ assert homepage.bind == "127.0.0.1:3000";
 assert homepage.healthUrl == "http://127.0.0.1:3000/api/healthcheck";
 assert homepage.restartPolicy == "unless-stopped";
 assert homepage.allowedHosts == [ "lab.xavierchanth.xyz" ];
+assert homepage.serviceNames == [ "Executor" ];
 assert builtins.elem "homepage.service" hades.dotfiles.labUpdate.requiredUnits;
 assert builtins.elem "docker.service" unit.requires;
 assert builtins.elem "multi-user.target" unit.wantedBy;

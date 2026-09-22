@@ -19,7 +19,7 @@ let
     disableUpdateCheck = true;
     layout.Lab = {
       style = "row";
-      columns = 2;
+      columns = 1;
     };
   };
   services = yaml.generate "services.yaml" [
@@ -29,12 +29,6 @@ let
           Executor = {
             description = "MCP gateway and capability manager";
             href = "https://executor.lab.xavierchanth.xyz";
-          };
-        }
-        {
-          Plane = {
-            description = "Human-visible work ledger";
-            href = "https://plane.lab.xavierchanth.xyz";
           };
         }
       ];
@@ -106,6 +100,12 @@ in
       type = lib.types.nonEmptyListOf (lib.types.strMatching "^[A-Za-z0-9.-]+(:[0-9]+)?$");
       default = [ "lab.xavierchanth.xyz" ];
       description = "Canonical ingress hosts accepted by Homepage";
+    };
+    serviceNames = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      readOnly = true;
+      default = [ "Executor" ];
+      description = "Names in the generated Homepage service catalog.";
     };
   };
 

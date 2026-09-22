@@ -1,6 +1,6 @@
 {
   name = "tailnet-gateway-dns";
   platforms = [ "nixos" ];
-  requires = [ "tailscale" ];
+  requires = [ "tailscale" "service-gateway" ];
   nixos = [ ./system.nix ];
 }

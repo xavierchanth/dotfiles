@@ -21,8 +21,11 @@ closed. Host TCP 80, TCP 443, and UDP 443 remain closed because Tailscale
 Services supplies the transport.
 
 The generated Service configuration is available through
-`dotfiles.serviceGateway.tailscaleService.configFile`. Applying and approving it
-is an attended operation.
+`dotfiles.serviceGateway.tailscaleService.configFile`. `svc-lab.service` applies
+that complete config, advertises `svc:lab`, waits for an approved TailVIP route,
+and derives the DNS receipt from authenticated local Tailscale state. A timer
+reconciles the same desired state every five minutes after restarts,
+re-addressing, TailVIP rotation, and NixOS redeployment.
 
 ## Runtime DNS state
 
@@ -33,30 +36,45 @@ The Hades resolver reads one root-owned, mode-`0600`, single-line state receipt:
 ```
 
 It records `service: "svc:lab"`, the resolver address, current Service address,
-expiry, and prepared-state identity. The resolver rejects symlinks, insecure
-ownership or permissions, malformed or expired receipts, and resolver-address
-mismatches with `tailscale ip -4`. It synthesizes only the approved gateway names and
-forwards everything else to public recursive DNS. There is no wildcard, so
-unknown nested service names follow the empty public web DNS and fail closed.
+expiry, stable node identity, and the desired Service-config digest. The
+reconciler replaces it atomically only after the live config, advertisement,
+approval, endpoint, Caddy health, node address, and TailVIP agree. The resolver
+rejects symlinks, insecure ownership or permissions, malformed or expired
+receipts, and resolver-address mismatches with `tailscale ip -4`. It synthesizes
+only the approved gateway names and forwards everything else to public recursive
+DNS. There is no wildcard, so unknown nested service names follow the empty
+public web DNS and fail closed.
 
 CoreDNS binds TCP and UDP 53 to the live Tailscale address. The firewall admits
 53 only on `tailscale0`. Forwarders are fixed public resolvers, preventing a
 loop through Tailscale split DNS.
 
-## Attended rollout
+## One-time bootstrap
 
-1. Define `svc:lab` with raw TCP 443 and approve tagged Hades as its host.
-2. Merge the repository policy fragment.
-3. Obtain the live Hades node address and Service address from the Tailscale
-   admin console and verify both independently.
-4. Create the single `svc-lab-state.json` receipt above with mode `0600`, the
-   verified addresses, `service: "svc:lab"`, an expiry, and the prepared-state
-   identity.
-5. Configure Hades's live node address as the restricted nameserver for
-   `xavierchanth.xyz`, including exit-node use.
-6. Deploy with `nix run path:.#deploy -- hades`.
-7. Export and authenticate Caddy's public root with
+1. Manually sign Hades into Tailscale using the normal interactive node login,
+   apply `tag:lab-host`, and define/approve `svc:lab` with TCP 443. In the
+   existing tailnet policy, let that tag advertise the Service, auto-approve it,
+   and grant the owner TCP 443 access.
+2. In the Tailscale admin console, manually add a restricted nameserver for
+   `xavierchanth.xyz` pointing to Hades's current Tailscale IPv4 address. Enable
+   use with an exit node if desired. If Hades is recreated or re-enrolled with a
+   different TailIP, update this entry manually.
+3. Deploy with `nix run path:.#deploy -- hades`.
+4. Export and authenticate Caddy's public root with
    `service-gateway-ca-export`; install that root on intended clients.
+
+Prefer normal interactive sign-in and manual admin-console changes for
+tailnet-wide tags, Service approval, restricted DNS, and access policy. Nix owns
+only Hades's local Tailscale client and advertised `svc:lab` state. OAuth or
+automated tailnet-wide mutation requires explicit approval for a specific
+recurring need.
+
+Normal deployment performs no recurring `tailscale serve` or receipt-writing
+steps by hand. It does not mutate restricted-DNS settings. Check convergence
+with `sudo tailscale-service-gateway status`
+or its `--json` form. Use `sudo tailscale-service-gateway drain` for an explicit,
+idempotent withdrawal; it preserves Caddy state and the desired Nix config while
+stopping private DNS. `sudo tailscale-service-gateway apply` restores the host.
 
 Do not add public A, AAAA, or CNAME records for these private origins. Preserve
 public mail, TXT/SPF, NS, CAA, and other non-web records.
@@ -68,7 +86,7 @@ resolver from a remote tailnet client and from a network overlapping
 `192.168.8.0/24`. Confirm public MX/TXT/NS answers match public DNS, the apex
 redirect preserves path and query, and unknown service names fail.
 
-Drain `svc:lab` to test HTTPS failure. Move either runtime state file aside and
-restart the resolver to test fail-closed DNS. Rollback removes the restricted
-nameserver, drains the Service, and restores the prior Hades generation; Caddy
-CA state under `/var/lib/caddy` is preserved.
+Run the packaged drain command to test HTTPS failure. Move the runtime receipt
+aside and restart the resolver to test fail-closed DNS. Rollback removes the
+restricted nameserver, drains the Service, and restores the prior Hades
+generation; Caddy CA state under `/var/lib/caddy` is preserved.

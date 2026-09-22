@@ -148,7 +148,7 @@ with tempfile.TemporaryDirectory() as directory:
     run("activate", "--expected-uid", uid, "--now", "100", "--intent", str(intent), "--overlay", str(overlay), "--authority", str(authority))
     assert json.loads(authority.read_text(encoding="utf-8"))["expiresAt"] is None
     assert partial.read_text(encoding="utf-8") == '{"version":1'
-    write(state, {"version": 1, "service": "svc:lab", "resolverAddress": "192.0.2.2", "address": "192.0.2.3", "expiresAt": 200, "preparedState": "prepared-state-0001"})
+    write(state, {"version": 1, "service": "svc:lab", "resolverAddress": "192.0.2.2", "address": "192.0.2.3", "expiresAt": 200, "nodeIdentity": "node-identity", "desiredConfigSha256": "a" * 64})
     run("tailnet", "--expected-uid", uid, "--now", "100", "--state", str(state))
     run("tailnet", "--expected-uid", uid, "--now", "201", "--state", str(state), succeeds=False)
 

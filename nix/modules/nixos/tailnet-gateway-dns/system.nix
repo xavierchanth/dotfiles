@@ -4,14 +4,13 @@ let
   cfg = config.dotfiles.tailnetGatewayDns;
   stateDir = "/var/lib/tailnet-gateway-dns";
   runtimeDir = "/run/tailnet-gateway-dns";
-  stateFile = "${stateDir}/svc-lab-state.json";
+  stateFile = config.dotfiles.serviceGateway.tailscaleService.stateFile;
   validator = pkgs.writeText "lab-runtime-state.py" (builtins.readFile ../../../../scripts/lab-runtime-state.py);
   prepare = pkgs.writeShellApplication {
     name = "tailnet-gateway-dns-prepare";
     runtimeInputs = [ pkgs.coreutils pkgs.python3 pkgs.tailscale ];
     text = ''
       set -eu
-      state_dir=${lib.escapeShellArg stateDir}
       runtime_dir=${lib.escapeShellArg runtimeDir}
       umask 077
       state_file=${lib.escapeShellArg stateFile}
@@ -96,7 +95,8 @@ in {
       description = "Tailnet-only private gateway DNS";
       wantedBy = [ "multi-user.target" ];
       wants = [ "tailscaled.service" "tailscaled-autoconnect.service" "network-online.target" ];
-      after = [ "tailscaled.service" "tailscaled-autoconnect.service" "network-online.target" ];
+      after = [ "tailscaled.service" "tailscaled-autoconnect.service" "network-online.target" "svc-lab.service" ];
+      requires = [ "svc-lab.service" ];
       serviceConfig = {
         Type = "simple";
         ExecStartPre = "${prepare}/bin/tailnet-gateway-dns-prepare";
