@@ -248,7 +248,7 @@ in
     volumes = [ "${dataDirectory}:/data" ];
     podman.sdnotify = "healthy";
     extraOptions = [
-      "--health-cmd=bun -e fetch('http://127.0.0.1:4788/api/health').then(async r=>process.exit(r.ok&&(await r.json()).status==='ok'?0:1),()=>process.exit(1))"
+      "--health-cmd=bun -e 'fetch(\"http://127.0.0.1:4788/api/health\").then(async r=>process.exit(r.ok&&(await r.json()).status===\"ok\"?0:1),()=>process.exit(1))'"
       "--health-interval=30s"
       "--health-timeout=5s"
       "--health-retries=5"
@@ -258,6 +258,7 @@ in
 
   systemd.services.executor = {
     description = "Executor MCP gateway and capability manager (Podman)";
+    serviceConfig.TimeoutStartSec = lib.mkForce "10min";
     after = lib.optionals offsite.enable [ "executor-backup-preflight.service" ];
     requires = lib.optionals offsite.enable [ "executor-backup-preflight.service" ];
     serviceConfig.ExecStartPre = lib.mkBefore [ "${prepare}/bin/executor-prepare" ];

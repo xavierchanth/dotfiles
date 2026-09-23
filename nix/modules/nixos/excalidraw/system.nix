@@ -117,7 +117,7 @@ in
         ];
         podman.sdnotify = "healthy";
         extraOptions = [
-          "--health-cmd=node -e require('http').get('http://127.0.0.1:8000/health',(r)=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"
+          "--health-cmd=node -e 'require(\"http\").get(\"http://127.0.0.1:8000/health\",(r)=>process.exit(r.statusCode===200?0:1)).on(\"error\",()=>process.exit(1))'"
           "--health-interval=30s"
           "--health-timeout=10s"
           "--health-retries=3"
@@ -145,8 +145,12 @@ in
 
     systemd.services.excalidraw-backend = {
       description = "ExcaliDash persistent diagram backend (Podman)";
+      serviceConfig.TimeoutStartSec = lib.mkForce "10min";
       serviceConfig.ExecStartPre = lib.mkBefore [ "${prepare}/bin/excalidraw-prepare" ];
     };
-    systemd.services.excalidraw.description = "ExcaliDash frontend (Podman)";
+    systemd.services.excalidraw = {
+      description = "ExcaliDash frontend (Podman)";
+      serviceConfig.TimeoutStartSec = lib.mkForce "10min";
+    };
   };
 }

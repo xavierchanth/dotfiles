@@ -111,5 +111,7 @@ in
         "--health-start-period=20s"
       ];
     };
+
+    systemd.services.homepage.serviceConfig.TimeoutStartSec = lib.mkForce "10min";
   };
 }
