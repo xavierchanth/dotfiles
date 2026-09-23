@@ -1,7 +1,7 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Action, ActionPanel, Clipboard, Form, Icon, List, environment, getPreferenceValues, showToast, Toast } from "@vicinae/api";
 import type { CredentialMode, EntryId, VaultEntry, VaultState } from "./domain";
-import { forgetPassword, parseCredentialMode, rememberPassword, unlockVault, type UnlockConfig, type UnlockRequest } from "./exporter";
+import { automaticUnlockRequest, forgetPassword, parseCredentialMode, rememberPassword, unlockVault, type UnlockConfig, type UnlockRequest } from "./exporter";
 import { loadFavorites, saveFavorites } from "./favorites";
 import { currentTotp } from "./totp";
 
@@ -20,6 +20,8 @@ export default function SearchKeePassXC() {
   const [state, setState] = useState<VaultState>({ kind: "locked" });
   const [favorites, setFavorites] = useState<ReadonlySet<EntryId>>(new Set());
   const credentials = parseCredentialMode(preferences);
+  const automaticRequest = automaticUnlockRequest(credentials);
+  const attemptedAutomaticUnlock = useRef(false);
   const config: UnlockConfig = {
     databasePath: preferences.databasePath,
     helperPath: `${environment.assetsPath}/vicinae-keepassxc-helper`,
@@ -35,16 +37,22 @@ export default function SearchKeePassXC() {
   }, [state]);
 
   const touch = useCallback(() => setState((current) => current.kind === "unlocked" ? { ...current, expiresAt: Date.now() + expiryMs } : current), [expiryMs]);
-  const unlock = useCallback(async (request: UnlockRequest, remember = false) => {
+  const unlock = useCallback(async (request: UnlockRequest, remember = false, fallbackToPassword = false) => {
     setState({ kind: "unlocking" });
     try {
       const vault = await unlockVault(config, request);
       if (remember && request.kind === "prompt") await rememberPassword(config, request.password);
       setState({ kind: "unlocked", vault, expiresAt: Date.now() + expiryMs });
     } catch (error) {
-      setState({ kind: "error", message: safeMessage(error) });
+      setState(fallbackToPassword ? { kind: "locked" } : { kind: "error", message: safeMessage(error) });
     }
   }, [config, expiryMs]);
+
+  useEffect(() => {
+    if (!automaticRequest || attemptedAutomaticUnlock.current) return;
+    attemptedAutomaticUnlock.current = true;
+    void unlock(automaticRequest, false, true);
+  }, [automaticRequest, unlock]);
 
   if (state.kind === "unlocking") return <List isLoading searchBarPlaceholder="Unlocking KeePassXC…" />;
   if (state.kind === "error") return <UnlockForm error={state.message} credentials={credentials} onUnlock={unlock} />;
@@ -93,7 +101,7 @@ function UnlockForm({ error, credentials, onUnlock }: { error?: string; credenti
   </ActionPanel>}>
     {error ? <Form.Description title="Unlock failed" text={error} /> : null}
     {credentials.kind === "key-file-only" ? <Form.Description text="This database will unlock with its configured key file and no password." /> : null}
-    {passwordBearing ? <Form.Description text="Enter the password below, or choose Unlock with macOS Keychain from the actions." /> : null}
+    {passwordBearing ? <Form.Description text="Keychain unlock is tried automatically. Enter the password below if it is unavailable or cancelled." /> : null}
     {passwordBearing ? <Form.PasswordField id="password" title="Database Password" value={password} onChange={setPassword} storeValue={false} autoFocus /> : null}
     {passwordBearing ? <Form.Checkbox id="remember" label="Remember in macOS Keychain" value={remember} onChange={setRemember} /> : null}
   </Form>;

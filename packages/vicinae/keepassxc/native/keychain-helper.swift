@@ -12,7 +12,8 @@ private enum HelperError: Error {
     case usage
     case invalidDatabase
     case invalidPassword
-    case keychain(OSStatus)
+    case keychain(String, OSStatus)
+    case authentication(Int)
     case process
     case exportTooLarge
     case timeout
@@ -37,6 +38,7 @@ private func baseQuery(database: String) -> [String: Any] {
         kSecClass as String: kSecClassGenericPassword,
         kSecAttrService as String: identity.service,
         kSecAttrAccount as String: identity.account,
+        kSecUseDataProtectionKeychain as String: false,
     ]
 }
 
@@ -52,40 +54,66 @@ private func readPassword() throws -> Data {
 private func delete(database: String, allowMissing: Bool = false) throws {
     let status = SecItemDelete(baseQuery(database: database) as CFDictionary)
     guard status == errSecSuccess || (allowMissing && status == errSecItemNotFound) else {
-        throw HelperError.keychain(status)
+        throw HelperError.keychain("delete", status)
     }
 }
 
 private func store(database: String) throws {
     var password = try readPassword()
     defer { password.resetBytes(in: 0..<password.count) }
-    var accessError: Unmanaged<CFError>?
-    guard let access = SecAccessControlCreateWithFlags(
-        nil,
-        kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
-        .userPresence,
-        &accessError
-    ) else { throw HelperError.keychain(errSecParam) }
-
     try delete(database: database, allowMissing: true)
     var query = baseQuery(database: database)
     query[kSecValueData as String] = password
-    query[kSecAttrAccessControl as String] = access
     let status = SecItemAdd(query as CFDictionary, nil)
-    guard status == errSecSuccess else { throw HelperError.keychain(status) }
+    guard status == errSecSuccess else { throw HelperError.keychain("add", status) }
+}
+
+private func requireUserPresence() throws {
+    let context = LAContext()
+    context.localizedReason = "Unlock the KeePassXC database for Vicinae"
+    var availabilityError: NSError?
+    guard context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &availabilityError) else {
+        throw HelperError.authentication((availabilityError as? LAError)?.code.rawValue ?? -1)
+    }
+
+    let semaphore = DispatchSemaphore(value: 0)
+    let resultLock = NSLock()
+    var allowed = false
+    var resultCode = -1
+    context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: context.localizedReason) { success, error in
+        resultLock.lock()
+        allowed = success
+        resultCode = (error as? LAError)?.code.rawValue ?? (success ? 0 : -1)
+        resultLock.unlock()
+        semaphore.signal()
+    }
+    semaphore.wait()
+    resultLock.lock()
+    let authenticated = allowed
+    let errorCode = resultCode
+    resultLock.unlock()
+    guard authenticated else { throw HelperError.authentication(errorCode) }
+}
+
+private func requireStoredPassword(database: String) throws {
+    var query = baseQuery(database: database)
+    query[kSecReturnAttributes as String] = true
+    query[kSecMatchLimit as String] = kSecMatchLimitOne
+    var result: CFTypeRef?
+    let status = SecItemCopyMatching(query as CFDictionary, &result)
+    guard status == errSecSuccess else { throw HelperError.keychain("find", status) }
 }
 
 private func retrieve(database: String) throws -> Data {
+    try requireStoredPassword(database: database)
+    try requireUserPresence()
     var query = baseQuery(database: database)
     query[kSecReturnData as String] = true
     query[kSecMatchLimit as String] = kSecMatchLimitOne
-    let context = LAContext()
-    context.localizedReason = "Unlock the KeePassXC database for Vicinae"
-    query[kSecUseAuthenticationContext as String] = context
     var result: CFTypeRef?
     let status = SecItemCopyMatching(query as CFDictionary, &result)
     guard status == errSecSuccess, let password = result as? Data else {
-        throw HelperError.keychain(status)
+        throw HelperError.keychain("copy", status)
     }
     return password
 }
@@ -188,9 +216,12 @@ do {
 } catch HelperError.timeout {
     FileHandle.standardError.write(Data("KeePassXC export timed out\n".utf8))
     exit(75)
-} catch HelperError.keychain(let status) {
-    FileHandle.standardError.write(Data("Keychain operation failed (\(status))\n".utf8))
+} catch HelperError.keychain(let operation, let status) {
+    FileHandle.standardError.write(Data("Keychain \(operation) failed (\(status))\n".utf8))
     exit(77)
+} catch HelperError.authentication(let code) {
+    FileHandle.standardError.write(Data("User authentication failed (\(code))\n".utf8))
+    exit(78)
 } catch {
     FileHandle.standardError.write(Data("KeePassXC export failed\n".utf8))
     exit(70)

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { helperExportInvocation, parseCredentialMode, promptInvocation, unlockInvocation, type UnlockConfig } from "../src/exporter";
+import { automaticUnlockRequest, helperExportInvocation, parseCredentialMode, promptInvocation, sanitizeHelperDiagnostic, unlockInvocation, type UnlockConfig } from "../src/exporter";
 
 const base = { databasePath: "/vault/main.kdbx", helperPath: "/extension/assets/vicinae-keepassxc-helper" };
 
@@ -44,4 +44,16 @@ test("credential mode rejects unlock requests from incompatible flows", () => {
   const keyOnly: UnlockConfig = { ...base, credentials: { kind: "key-file-only", keyFilePath: "/keys/main.keyx" } };
   assert.throws(() => unlockInvocation(keyOnly, { kind: "prompt", password: "unused" }), /only a key file/i);
   assert.throws(() => unlockInvocation({ ...base, credentials: { kind: "password" } }, { kind: "key-file-only" }), /requires a password/i);
+});
+
+test("password modes automatically try Keychain while key-file-only falls back directly", () => {
+  assert.deepEqual(automaticUnlockRequest({ kind: "password" }), { kind: "keychain" });
+  assert.deepEqual(automaticUnlockRequest({ kind: "password-key-file", keyFilePath: "/keys/main.keyx" }), { kind: "keychain" });
+  assert.equal(automaticUnlockRequest({ kind: "key-file-only", keyFilePath: "/keys/main.keyx" }), undefined);
+});
+
+test("helper diagnostics are single-line, printable, and bounded", () => {
+  const diagnostic = sanitizeHelperDiagnostic(`Keychain find failed (-25300)\n\tcontext\u0000${"x".repeat(300)}`);
+  assert.match(diagnostic, /^Keychain find failed \(-25300\) contextx+$/);
+  assert.equal(diagnostic.length, 240);
 });

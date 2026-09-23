@@ -15,6 +15,14 @@ export type UnlockRequest =
   | Readonly<{ kind: "keychain" }>
   | Readonly<{ kind: "key-file-only" }>;
 
+export function automaticUnlockRequest(credentials: CredentialMode): UnlockRequest | undefined {
+  return credentials.kind === "key-file-only" ? undefined : { kind: "keychain" };
+}
+
+export function sanitizeHelperDiagnostic(input: string): string {
+  return input.replace(/[\r\n\t]+/g, " ").replace(/[^\x20-\x7E]/g, "").trim().slice(0, 240);
+}
+
 function exactPath(path: string | undefined, label: string): string {
   if (!path || !isAbsolute(path)) throw new Error(`${label} must be configured as an absolute path`);
   return path;
@@ -54,18 +62,30 @@ function run(invocation: Invocation, maxBytes: number): Promise<string> {
   return new Promise((resolve, reject) => {
     const child = spawn(invocation.executable, [...invocation.args], { shell: false, stdio: ["pipe", "pipe", "pipe"], windowsHide: true });
     const stdout: Buffer[] = [];
+    const stderr: Buffer[] = [];
     let stdoutBytes = 0;
+    let stderrBytes = 0;
     const timer = setTimeout(() => child.kill(), 30_000);
     child.stdout.on("data", (chunk: Buffer) => {
       stdoutBytes += chunk.length;
       if (stdoutBytes > maxBytes) child.kill(); else stdout.push(chunk);
     });
-    child.stderr.resume();
+    child.stderr.on("data", (chunk: Buffer) => {
+      if (stderrBytes >= 4096) return;
+      const remaining = 4096 - stderrBytes;
+      const bounded = chunk.subarray(0, remaining);
+      stderr.push(bounded);
+      stderrBytes += bounded.length;
+    });
     child.on("error", () => { clearTimeout(timer); reject(new Error("Could not start the credential helper")); });
     child.on("close", (code, signal) => {
       clearTimeout(timer);
       if (stdoutBytes > maxBytes) return reject(new Error("KeePass export exceeds the safety limit"));
-      if (code !== 0) return reject(new Error(`KeePassXC could not unlock the database (${signal ? "terminated" : `exit ${code}`})`));
+      if (code !== 0) {
+        const diagnostic = sanitizeHelperDiagnostic(Buffer.concat(stderr).toString("utf8"));
+        const reason = signal ? "terminated" : `exit ${code}`;
+        return reject(new Error(`KeePassXC could not unlock the database (${reason})${diagnostic ? `: ${diagnostic}` : ""}`));
+      }
       resolve(Buffer.concat(stdout).toString("utf8"));
     });
     child.stdin.end(invocation.stdin === undefined ? undefined : `${invocation.stdin}\n`);
