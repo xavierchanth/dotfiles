@@ -20,7 +20,7 @@ Prefer `xc/<descriptive-name>` for new branches and jj bookmarks. Preserve exist
 
 ## Delegated model preferences
 
-When spawning a delegated agent or sub-agent, set its model and reasoning explicitly. Default each agent independently to `gpt-5.6-sol` with `low` reasoning. Selecting a different model does not change the reasoning default; use `low` unless another reasoning effort is explicitly requested. Supporting and nested agents reset to `gpt-5.6-sol` with `low` reasoning rather than inheriting their parent's overrides, unless another model or reasoning effort is explicitly requested.
+When spawning a delegated agent or sub-agent, set its model and reasoning explicitly. Default each agent independently to `gpt-6-sol` with `low` reasoning. Selecting a different model does not change the reasoning default; use `low` unless another reasoning effort is explicitly requested. Supporting and nested agents reset to `gpt-6-sol` with `low` reasoning rather than inheriting their parent's overrides, unless another model or reasoning effort is explicitly requested.
 
 ## Codex task environments
 
