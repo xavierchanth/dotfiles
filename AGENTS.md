@@ -11,6 +11,10 @@ This repository is a new port of the dotfiles setup. Treat it as the source of t
 - Prefer reproducible, cross-machine configuration. Do not hardcode machine-specific paths, usernames, home directories, or profile locations when a Nix value can derive them.
 - When a path depends on a package or system context, derive it from Nix instead of spelling it literally. Example: prefer `${pkgs.tmux}/bin/tmux` or `${config.home.homeDirectory}` over hardcoded paths like `/etc/profiles/per-user/chant/bin/tmux` or `/Users/chant/...`.
 
+## Tailscale Administration
+
+Prefer normal interactive Tailscale sign-in and manual admin-console changes for tailnet-wide configuration, including device tags, service definitions and approvals, DNS settings, and access policy. Dotfiles may declaratively configure each machine's local Tailscale client and the services it advertises. Introduce OAuth credentials or automated tailnet-wide mutations only when Xavier explicitly approves automation for a specific recurring need.
+
 ## Repo Shape
 
 - `flake.nix` and `flake.lock`: thin flake entrypoint and pinned inputs.
@@ -23,11 +27,13 @@ This repository is a new port of the dotfiles setup. Treat it as the source of t
 - `nix/modules/{shared,home,darwin,nixos}/*`: reusable platform and user modules.
 - `scripts/*.sh` and `scripts/deploy`: repository-local maintenance and the packaged deploy-rs wrapper.
 - `bin/shared` and `bin/hosts/*`: commands intended for the configured user PATH.
+- `packages/<ecosystem>/<name>`: standalone source packages grouped by ecosystem; see `docs/repository-layout.md`.
 - `docs/lab/*`: lab architecture and operational runbooks.
 - `tests/*`: repository script regression tests.
 
 ## Change Approach
 
 - Make focused edits that match the existing module layout.
+- Put standalone source projects in `packages/<ecosystem>/<name>`; reserve `stow/` for files linked into a user environment.
 - Prefer adding or updating the relevant shared or host module over introducing ad hoc files.
 - If a tool is not configured yet and the `v1` branch may be useful as reference, pause and ask first.

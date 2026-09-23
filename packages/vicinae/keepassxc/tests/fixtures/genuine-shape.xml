@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<KeePassFile><Meta><RecycleBinUUID>AAAAAAAAAAAAAAAAAAAAAA==</RecycleBinUUID></Meta><Root><Group>
+<UUID>AQIDBAUGBwgJCgsMDQ4PEA==</UUID><Name>Root</Name><Entry><UUID>ERITFBUWFxgZGhscHR4fIA==</UUID>
+<String><Key>Title</Key><Value>Production Login</Value></String>
+<String><Key>UserName</Key><Value>operator</Value></String>
+<String><Key>Password</Key><Value ProtectInMemory="True">redacted-fixture-value</Value></String>
+<String><Key>otp</Key><Value>otpauth://totp/Example:operator?secret=JBSWY3DPEHPK3PXP&amp;issuer=Example</Value></String>
+</Entry></Group></Root></KeePassFile>

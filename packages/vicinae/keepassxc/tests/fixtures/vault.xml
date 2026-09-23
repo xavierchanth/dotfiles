@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<KeePassFile><Meta><RecycleBinUUID>recycle-uuid</RecycleBinUUID></Meta><Root><Group>
+<UUID>root-uuid</UUID><Name>Root</Name>
+<Group><UUID>work-uuid</UUID><Name>Work &amp; Labs</Name>
+<Entry><UUID>entry-1</UUID><String><Key>Title</Key><Value>Example</Value></String><String><Key>UserName</Key><Value>alice</Value></String><String><Key>Password</Key><Value>synthetic-password</Value></String><String><Key>URL</Key><Value>https://example.test</Value></String><String><Key>otp</Key><Value>otpauth://totp/Test?secret=JBSWY3DPEHPK3PXP&amp;algorithm=SHA1&amp;digits=6&amp;period=30</Value></String></Entry>
+<Entry><UUID>entry-history-holder</UUID><History><Entry><UUID>old</UUID></Entry></History><String><Key>Title</Key><Value>Current</Value></String></Entry>
+</Group>
+<Group><UUID>recycle-uuid</UUID><Name>Recycle Bin</Name><Entry><UUID>deleted</UUID><String><Key>Title</Key><Value>Deleted</Value></String></Entry></Group>
+</Group></Root></KeePassFile>

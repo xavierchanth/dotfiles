@@ -9,6 +9,7 @@
   openwrtProfiles = import ./openwrt/profiles.nix;
   lab = import ./lab.nix;
   openwrtRender = import ./openwrt/render.nix { inherit lab; };
+  labNetworkCutover = import ./openwrt/cutover.nix;
   registry = import ./registry.nix;
   resolve = import ./lib/groups.nix { inherit lib; };
   profileKinds = {
@@ -125,20 +126,65 @@
      assert eris.system.defaults.loginwindow.autoLoginUser == null;
      assert !(builtins.elem "tailscale-app" eris.homebrew.casks);
      true;
+  darwinMaintenanceValidation = let
+    expectedSchedule = map (Hour: {
+      inherit Hour;
+      Minute = 0;
+      Day = null;
+      Month = null;
+      Weekday = null;
+    }) [ 4 5 6 ];
+    validates = name: let
+      config = (mkDarwin name).config;
+      service = config.launchd.daemons.dotfiles-nix-store-maintenance.serviceConfig;
+      activation = config.system.activationScripts.postActivation.text;
+    in assert service.StartCalendarInterval == expectedSchedule;
+       assert service.ProcessType == "Background";
+       assert service.LowPriorityIO;
+       assert service.LowPriorityBackgroundIO;
+       assert builtins.length service.ProgramArguments == 2;
+       assert lib.hasPrefix "/nix/store/" (builtins.head service.ProgramArguments);
+       assert builtins.elem "run" service.ProgramArguments;
+       assert lib.hasInfix "nix-store-maintenance request" activation;
+       assert !(lib.hasInfix "brew" (builtins.concatStringsSep " " service.ProgramArguments));
+       true;
+  in assert lib.all validates [ "nyx" "eris" ]; true;
   jioValidation = import ./tests/jio.nix { inherit lib mkHome home-manager jioPackageFor pkgsFor; };
-  homepageValidation = import ./tests/homepage.nix { inherit mkNixos contextFor; };
+  homepageValidation = import ./tests/homepage.nix { inherit lib mkNixos contextFor; };
+  excalidrawValidation = import ./tests/excalidraw.nix { inherit lib mkNixos contextFor; };
   cliproxyapiValidation = import ./tests/cliproxyapi.nix { inherit lib mkNixos contextFor; };
   cpaManagerPlusValidation = import ./tests/cpa-manager-plus.nix { inherit lib mkNixos contextFor; };
   serviceGatewayValidation = import ./tests/service-gateway.nix { inherit lib mkNixos contextFor; };
+  tailnetGatewayDnsValidation = import ./tests/tailnet-gateway-dns.nix { inherit lib mkNixos contextFor; };
+  labDnsDhcpValidation = import ./tests/lab-dns-dhcp.nix { inherit lib mkNixos contextFor; };
+  tailscaleRouterValidation = import ./tests/tailscale-router.nix { inherit lib mkNixos; };
+  erisHeadlessValidation = import ./tests/eris-headless.nix { inherit lib mkDarwin; };
+  podmanHostValidation = let
+    hades = (mkNixos "hades").config;
+  in assert hades.virtualisation.oci-containers.backend == "podman";
+     assert hades.virtualisation.podman.enable;
+     assert hades.virtualisation.podman.defaultNetwork.settings.dns_enabled;
+     assert !hades.virtualisation.docker.enable;
+     assert !hades.virtualisation.podman.dockerCompat;
+     assert !hades.virtualisation.podman.dockerSocket.enable;
+     assert builtins.elem "podman-host" (contextFor "hades").groupNames;
+     assert !(builtins.elem "docker-host" (contextFor "hades").groupNames);
+     true;
   executorValidation = let
     hades = (mkNixos "hades").config;
     executor = hades.dotfiles.executor;
+    container = hades.virtualisation.oci-containers.containers.executor;
   in assert executor.image == "ghcr.io/usefulsoftwareco/executor-selfhost:v1.6.8@sha256:527e014ce0641e9d569314561fba2a37b872ffd5074471b9bc48b66611ecb090";
      assert executor.bind == "127.0.0.1:4788";
      assert executor.webBaseUrl == "https://executor.lab.xavierchanth.xyz";
      assert executor.dataDirectory == "/var/lib/executor/data";
      assert executor.healthUrl == "http://127.0.0.1:4788/api/health";
      assert !executor.allowLocalNetwork && !executor.allowStdioMcp;
+     assert container.serviceName == "executor";
+     assert container.image == executor.image;
+     assert container.ports == [ "127.0.0.1:4788:4788" ];
+     assert container.volumes == [ "/var/lib/executor/data:/data" ];
+     assert container.podman.sdnotify == "healthy";
      assert builtins.elem "executor.service" hades.dotfiles.labUpdate.requiredUnits;
      assert !executor.offsiteBackup.enable;
      assert !(builtins.elem "executor-backup-preflight.service" hades.systemd.services.executor.requires);
@@ -146,7 +192,7 @@
      assert !(hades.systemd.services ? executor-offsite-backup);
      assert hades.systemd.timers.executor-backup.timerConfig.Unit == "executor-backup.service";
      true;
-  checked = builtins.deepSeq validKinds (assert resolverTests; assert profileTests; assert codingValidation; assert inventoryValidation; assert darwinServerValidation; assert homepageValidation; assert cliproxyapiValidation; assert cpaManagerPlusValidation; assert serviceGatewayValidation; assert executorValidation; true);
+  checked = builtins.deepSeq validKinds (assert !(registry ? plane); assert resolverTests; assert profileTests; assert codingValidation; assert inventoryValidation; assert darwinServerValidation; assert darwinMaintenanceValidation; assert homepageValidation; assert excalidrawValidation; assert cliproxyapiValidation; assert cpaManagerPlusValidation; assert serviceGatewayValidation; assert tailnetGatewayDnsValidation; assert labDnsDhcpValidation; assert tailscaleRouterValidation; assert erisHeadlessValidation; assert podmanHostValidation; assert executorValidation; true);
   systems = [ "aarch64-darwin" "aarch64-linux" "x86_64-linux" ];
   deployNodes = attrs deployNames (name: let
     host = inventory.${name};
@@ -192,6 +238,15 @@
   flakeSource = inputs.self.outPath;
   allPackages = lib.genAttrs systems (system: let pkgs = pkgsFor system; in rec {
     openwrt-charon-uci = pkgs.writeText "charon-uci" openwrtRender;
+    lab-network-cutover-manifest = pkgs.writeText "lab-network-cutover.json" (builtins.toJSON labNetworkCutover);
+    lab-network-cutover = pkgs.writeShellApplication {
+      name = "lab-network-cutover";
+      runtimeInputs = [ pkgs.openssh pkgs.python3 ];
+      text = ''
+        export LAB_CUTOVER_MANIFEST=${lib.escapeShellArg (toString lab-network-cutover-manifest)}
+        exec ${pkgs.python3}/bin/python3 ${../scripts/lab-network-cutover.py} "$@"
+      '';
+    };
     openwrt-apply-charon = pkgs.writeShellApplication { name = "openwrt-apply-charon"; runtimeInputs = [ pkgs.coreutils pkgs.gnused pkgs.gnugrep pkgs.openssh pkgs.nix ]; text = ''
       export CHARON_RENDER="${openwrt-charon-uci}"
       ${builtins.readFile ../scripts/openwrt-apply-charon}
@@ -225,6 +280,7 @@ in builtins.seq checked (builtins.seq deployValidation {
   packages = allPackages;
   apps = lib.genAttrs systems (system: {
     deploy = { type = "app"; program = "${allPackages.${system}.deploy-cli}/bin/deploy"; meta.description = "Deploy a configured lab host with deploy-rs"; };
+    lab-network-cutover = { type = "app"; program = "${allPackages.${system}.lab-network-cutover}/bin/lab-network-cutover"; meta.description = "Prepare and operate the guarded two-phase lab network cutover"; };
     openwrt-apply-charon = { type = "app"; program = "${allPackages.${system}.openwrt-apply-charon}/bin/openwrt-apply-charon"; meta.description = "Apply the managed Charon router DNS configuration"; };
   });
   deploy = deployConfig;
@@ -259,12 +315,73 @@ in builtins.seq checked (builtins.seq deployValidation {
         touch "$out"
       '';
 
-      service-gateway = assert serviceGatewayValidation; pkgs.runCommand "service-gateway-tests" { } ''
-        echo 'service gateway eval assertions passed' > $out
+      service-gateway = let
+        cliProxyVhost = (mkNixos "hades").config.services.caddy.virtualHosts."cliproxyapi.lab.xavierchanth.xyz";
+        caddyfile = pkgs.writeText "service-gateway-cliproxyapi-Caddyfile" ''
+          {
+            admin off
+          }
+          cliproxyapi.lab.xavierchanth.xyz:443 {
+            ${cliProxyVhost.extraConfig}
+          }
+        '';
+      in assert serviceGatewayValidation; pkgs.runCommand "service-gateway-tests" {
+        nativeBuildInputs = [ pkgs.caddy pkgs.jq pkgs.python3 ];
+        SVC_LAB_CONTROLLER = ../scripts/tailscale-service-gateway.py;
+        PYTHONDONTWRITEBYTECODE = "1";
+      } ''
+        caddy adapt --config ${caddyfile} --adapter caddyfile > adapted.json
+        handlers=$(jq -c '[
+          .apps.http.servers[].routes[]
+          | ..
+          | objects
+          | .handler?
+          | select(. == "reverse_proxy" or . == "static_response")
+        ]' adapted.json)
+        test "$handlers" = '["reverse_proxy","static_response"]'
+        paths=$(jq -c '[
+          .apps.http.servers[].routes[]
+          | ..
+          | objects
+          | select(.handle?[0]?.handler? == "reverse_proxy")
+          | .match[0].path[]
+        ]' adapted.json)
+        test "$paths" = '["/v1/models","/v1/responses","/v1/responses/compact"]'
+        python3 ${../tests/tailscale-service-gateway.py}
+        echo 'service gateway eval and adapted-route assertions passed' > $out
+      '';
+
+      tailscale-router = assert tailscaleRouterValidation; pkgs.runCommand "tailscale-router-tests" { } ''
+        echo 'Tailscale router eval assertions passed' > $out
+      '';
+
+      tailnet-gateway-dns = assert tailnetGatewayDnsValidation; pkgs.runCommand "tailnet-gateway-dns-tests" { } ''
+        echo 'tailnet gateway DNS eval assertions passed' > $out
+      '';
+
+      lab-dns-dhcp = assert labDnsDhcpValidation; pkgs.runCommand "lab-dns-dhcp-tests" {
+        nativeBuildInputs = [ pkgs.bash pkgs.coreutils pkgs.jq pkgs.python3 ];
+      } ''
+        export TEST_ROOT=${flakeSource}
+        ${pkgs.python3}/bin/python3 ${../tests/lab-runtime-state.py}
+        ${pkgs.python3}/bin/python3 ${../tests/lab-dhcp-watchdog.py}
+        echo 'Lab DNS and DHCP eval assertions passed' > $out
+      '';
+
+      eris-headless = assert erisHeadlessValidation; pkgs.runCommand "eris-headless-tests" { } ''
+        echo 'Eris headless eval assertions passed' > $out
       '';
 
       homepage = assert homepageValidation; pkgs.runCommand "homepage-tests" { } ''
         echo 'homepage eval assertions passed' > $out
+      '';
+
+      podman-host = assert podmanHostValidation && executorValidation; pkgs.runCommand "podman-host-tests" { } ''
+        echo 'Podman host and Executor eval assertions passed' > $out
+      '';
+
+      excalidraw = assert excalidrawValidation; pkgs.runCommand "excalidraw-tests" { } ''
+        echo 'ExcaliDash persistent service eval assertions passed' > $out
       '';
 
       cliproxyapi = let
@@ -348,6 +465,16 @@ in builtins.seq checked (builtins.seq deployValidation {
         bash ${../tests/openwrt.sh}
         touch $out
       '';
+      lab-network-cutover = pkgs.runCommand "lab-network-cutover-tests" {
+        nativeBuildInputs = [ pkgs.nix pkgs.python3 ];
+        TEST_ROOT = flakeSource;
+        LAB_CUTOVER_BIN = "${allPackages.${system}.lab-network-cutover}/bin/lab-network-cutover";
+        LAB_CUTOVER_MANIFEST_TEST = allPackages.${system}.lab-network-cutover-manifest;
+        PYTHONDONTWRITEBYTECODE = "1";
+      } ''
+        python3 ${../tests/lab-network-cutover.py}
+        touch $out
+      '';
       lab-update-safety = let
         manifest = name: (mkNixos name).config.environment.etc."lab-update/required-units".text;
       in pkgs.runCommand "lab-update-safety-tests" {
@@ -358,6 +485,16 @@ in builtins.seq checked (builtins.seq deployValidation {
         POSEIDON_MANIFEST = manifest "poseidon";
       } ''
         bash ${../tests/lab-update-test.sh}
+        touch $out
+      '';
+    } // lib.optionalAttrs (lib.hasSuffix "-darwin" system) {
+      nix-store-maintenance = pkgs.runCommand "nix-store-maintenance-tests" {
+        nativeBuildInputs = [ pkgs.bash pkgs.coreutils pkgs.gawk pkgs.gnugrep pkgs.shellcheck ];
+        NIX_STORE_MAINTENANCE_SCRIPT = ../scripts/nix-store-maintenance.sh;
+        DOTFILES_CLEAN_SCRIPT = ../scripts/clean.sh;
+      } ''
+        shellcheck ${../scripts/nix-store-maintenance.sh} ${../tests/nix-store-maintenance.sh}
+        bash ${../tests/nix-store-maintenance.sh}
         touch $out
       '';
     } // lib.optionalAttrs (pkgs ? uci && lib.hasSuffix "-linux" system) {

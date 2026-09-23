@@ -59,7 +59,7 @@ Hermes and other agent workers can execute commands and ingest untrusted content
 - A dedicated unprivileged identity.
 - A container or microVM boundary.
 - A dedicated workspace instead of the operator home directory.
-- No host deployment keys, unrestricted Docker socket, or broad NAS mount.
+- No host deployment keys, privileged container socket, or broad NAS mount.
 - Explicit network access and narrowly scoped credentials.
 - CPU, memory, process, and disk limits.
 - Disposable execution state; export only intentional artifacts and durable agent state.
@@ -68,26 +68,25 @@ Hermes should have one declared owner among the Linux workers. Choose between Po
 
 ## Assigned roles and service placement
 
-- `hades`: headless shared default Docker host over Tailscale and selected network services.
+- `hades`: headless Podman application host over Tailscale and selected network services.
 - `poseidon` and `zeus`: Linux workers with Cage for computer-use workflows.
 - `eris`: Mac worker.
 - `charon`: existing lab router.
-- `nyx`: daily Mac workstation and remote Docker client.
+- `nyx`: daily Mac workstation.
 
 These roles are settled; individual service deployments still require capacity
 checks and explicit host configuration. Hades's network services remain to be
 selected. Keep essential routing and access independent of development containers.
-See the [shared Docker plan](docker.md) for client behavior and rollout steps.
+See the [shared Podman plan](podman.md) for lifecycle and rollout steps.
 
-Interactive Docker clients default to Hades. Jobs assigned to a worker must use
-that worker's own execution environment, explicitly selecting a local container
-runtime when needed. Sending a Docker command to Hades consumes Hades's compute,
-even if the command originates on Poseidon or Zeus.
+Persistent Lab containers run on Hades under systemd-owned Podman units. Jobs
+assigned to a worker use that worker's own execution environment; Hades does not
+provide a shared privileged container socket to interactive clients.
 
 Forgejo remains a proposed persistent service; choose its placement after checking
 storage and isolation requirements. Assign Hermes and Linux runners across Poseidon
-and Zeus from measured capacity. Keep untrusted jobs isolated from Hades's Docker
-administration and persistent service data.
+and Zeus from measured capacity. Keep untrusted jobs isolated from Hades's rootful
+Podman runtime and persistent service data.
 
 ## Deployment lifecycle
 

@@ -12,10 +12,10 @@ Eris is the Mac worker and remains on macOS, managed by `darwinConfigurations.er
 
 Each host is independently exposed as `nixosConfigurations.<hostname>` with Home Manager for the operator account. The repository now has NixOS configurations for all three; any real-world Ubuntu-to-NixOS transition must still preserve bootable rollback and recovery access.
 
-Hades is assigned shared Docker and selected network services; Poseidon and Zeus
+Hades is assigned shared Podman workloads and selected network services; Poseidon and Zeus
 are Linux workers with Cage for computer-use workflows. Hades is headless and
 does not include the Cage desktop group. These assignments establish intended roles, not deployed
-service status. See the [shared Docker plan](docker.md) for rollout requirements.
+service status. See the [shared Podman plan](podman.md) for rollout requirements.
 Hades also owns the tailnet-only [stable service gateway](service-gateway.md).
 
 For each host:

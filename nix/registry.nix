@@ -18,12 +18,14 @@
   ssh-server = import ./modules/nixos/ssh-server;
   tailscale = import ./modules/nixos/tailscale;
   service-gateway = import ./modules/nixos/service-gateway;
-  docker-host = import ./modules/nixos/docker-host;
+  tailnet-gateway-dns = import ./modules/nixos/tailnet-gateway-dns;
+  lab-dns-dhcp = import ./modules/nixos/lab-dns-dhcp;
+  podman-host = import ./modules/nixos/podman-host;
   homepage = import ./modules/nixos/homepage;
+  excalidraw = import ./modules/nixos/excalidraw;
   cliproxyapi = import ./modules/nixos/cliproxyapi;
   cpa-manager-plus = import ./modules/nixos/cpa-manager-plus;
   executor = import ./modules/nixos/executor;
-  plane = import ./modules/nixos/plane;
   cage-desktop = import ./modules/nixos/cage-desktop;
   server-power = import ./modules/nixos/server-power;
   maintenance = import ./modules/nixos/maintenance;
@@ -36,4 +38,5 @@
   darwin-server-remote-access = import ./modules/darwin/server-remote-access;
   darwin-desktop-apps = import ./modules/darwin/desktop-apps;
   darwin-server-brew = import ./modules/darwin/homebrew;
+  darwin-maintenance = import ./modules/darwin/maintenance;
 }

@@ -1,5 +1,9 @@
 { ... }:
 {
+  dotfiles.serviceGateway.bindAddress = "127.0.0.1";
+  dotfiles.serviceGateway.httpsPort = 8443;
+  dotfiles.serviceGateway.redirects."xavierchanth.xyz" = "https://lab.xavierchanth.xyz";
+
   dotfiles.serviceGateway.routes."lab.xavierchanth.xyz" = {
     upstream = {
       address = "127.0.0.1";
@@ -18,13 +22,13 @@
     upstreamUnit = "executor.service";
   };
 
-  dotfiles.serviceGateway.routes."plane.lab.xavierchanth.xyz" = {
+  dotfiles.serviceGateway.routes."excalidraw.lab.xavierchanth.xyz" = {
     upstream = {
       address = "127.0.0.1";
-      port = 8080;
+      port = 3100;
     };
     healthPath = "/";
-    upstreamUnit = "plane.service";
+    upstreamUnit = "excalidraw.service";
   };
 
   dotfiles.serviceGateway.routes."cliproxyapi.lab.xavierchanth.xyz" = {

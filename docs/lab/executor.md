@@ -13,7 +13,7 @@ Executor is the Lab's MCP gateway and capability manager. The pinned
 - Caddy proxies the stable service surface to the loopback listener and
   preserves authentication and streaming headers.
 - Executor owns MCP registration, credentials, tool policy, and capability
-  lifecycle. Cage, Plane, and future services remain behind Executor rather
+  lifecycle. Cage and future services remain behind Executor rather
   than becoming direct agent dependencies.
 - Local-network access and stdio MCP launch are disabled until their adapter
   gates below are satisfied.
@@ -30,14 +30,14 @@ the setup screen becomes the owner. Complete this enrollment before creating
 invite links or registering integrations.
 
 Keep service credentials in Executor's encrypted provider configuration. Do
-not place adapter tokens in the Compose file or Caddy configuration.
+not place adapter tokens in the declarative container or Caddy configuration.
 
 ## Backups and restore
 
-`executor-backup.timer` runs daily. It stops the Executor container, archives
+`executor-backup.timer` runs daily. It stops the Podman-managed Executor container, archives
 the complete `/var/lib/executor` tree with numeric ownership, writes a manifest
-containing the pinned release, image digest, and resolved Compose
-configuration and checksums, then restarts the container. Backup directories
+containing the pinned release and inspected OCI image digest plus checksums,
+then restarts the container. Backup directories
 live under `/var/backups/executor` and are retained for 14 days. This local
 snapshot and the manual restore procedure below are sufficient for the
 experimental, rebuildable pilot; loss of Hades may also lose these snapshots.
@@ -98,7 +98,7 @@ is made available to an agent:
 4. A harmless read-only end-to-end call through the stable `/mcp` endpoint.
 5. Audit evidence that the client receives only the intended scoped tools.
 
-Plane is a human-visible work ledger, not an orchestration service. Cage and
-JIO remain independently owned products; required product changes return to
-their teams. Enabling local-network targets or per-task stdio MCP processes is
-a separate reviewed change after isolation and lifecycle behavior are proven.
+Cage and JIO remain independently owned products; required product changes
+return to their teams. Enabling local-network targets or per-task stdio MCP
+processes is a separate reviewed change after isolation and lifecycle behavior
+are proven.

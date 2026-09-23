@@ -1,6 +1,6 @@
 {
-  name = "plane";
+  name = "excalidraw";
   platforms = [ "nixos" ];
-  requires = [ "docker-host" ];
+  requires = [ "podman-host" ];
   nixos = [ ./system.nix ];
 }

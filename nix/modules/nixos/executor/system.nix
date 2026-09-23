@@ -7,32 +7,6 @@ let
   stateDirectory = executor.stateDirectory;
   dataDirectory = executor.dataDirectory;
   backupDirectory = "/var/backups/executor";
-  composePath = "${stateDirectory}/docker-compose.yml";
-  composeFile = pkgs.writeText "executor-${release}-docker-compose.yml" ''
-    services:
-      executor:
-        image: ${image}
-        restart: unless-stopped
-        ports:
-          - "${executor.bind}:4788"
-        environment:
-          EXECUTOR_WEB_BASE_URL: "${executor.webBaseUrl}"
-          EXECUTOR_ALLOW_LOCAL_NETWORK: "${lib.boolToString executor.allowLocalNetwork}"
-          EXECUTOR_ALLOW_STDIO_MCP: "${lib.boolToString executor.allowStdioMcp}"
-        volumes:
-          - "${dataDirectory}:/data"
-        healthcheck:
-          test:
-            - CMD
-            - bun
-            - -e
-            - "fetch('http://127.0.0.1:4788/api/health').then(async r=>process.exit(r.ok&&(await r.json()).status==='ok'?0:1),()=>process.exit(1))"
-          interval: 30s
-          timeout: 5s
-          retries: 5
-          start_period: 20s
-  '';
-  compose = "${pkgs.docker-compose}/bin/docker-compose --project-name executor --file ${composePath}";
   offsite = config.dotfiles.executor.offsiteBackup;
   prepare = pkgs.writeShellApplication {
     name = "executor-prepare";
@@ -44,12 +18,11 @@ let
       install -d -m 0750 -o 65532 -g 65532 ${dataDirectory}
       chown 65532:65532 ${dataDirectory}
       chmod 0750 ${dataDirectory}
-      install -m 0444 -o root -g root ${composeFile} ${composePath}
     '';
   };
   backup = pkgs.writeShellApplication {
     name = "executor-backup";
-    runtimeInputs = [ pkgs.coreutils pkgs.curl pkgs.findutils pkgs.gnutar pkgs.gzip pkgs.docker pkgs.docker-compose pkgs.jq pkgs.systemd ];
+    runtimeInputs = [ pkgs.coreutils pkgs.curl pkgs.findutils pkgs.gnutar pkgs.gzip pkgs.jq config.virtualisation.podman.package pkgs.systemd ];
     text = ''
       set -euo pipefail
       umask 077
@@ -70,11 +43,10 @@ let
       }
 
       recover() {
-        ${compose} start >/dev/null && wait_healthy
+        systemctl start executor.service && wait_healthy
       }
 
       mark_unhealthy() {
-        ${compose} down >/dev/null 2>&1 || true
         systemctl --no-block stop executor.service || true
       }
 
@@ -92,25 +64,27 @@ let
       trap cleanup EXIT INT TERM
       install -d -m 0700 "$temporary"
 
-      running=1
-      ${compose} stop --timeout 60
+      if systemctl is-active --quiet executor.service; then
+        running=1
+        systemctl stop executor.service
+      fi
       tar --numeric-owner -C /var/lib -czf "$temporary/executor-state.tar.gz" executor
       {
         printf 'release=%s\n' '${release}'
         printf 'image=%s\n' '${image}'
         printf 'created_at=%s\n' "$stamp"
-        printf '\ncompose_config:\n'
-        ${compose} config
-        printf '\ncontainer_images:\n'
-        ${compose} images
+        printf '\ncontainer_image:\n'
+        podman image inspect --format '{{.Id}} {{.Digest}}' '${image}'
       } > "$temporary/manifest.txt"
       (cd "$temporary" && sha256sum executor-state.tar.gz manifest.txt > SHA256SUMS)
-      if ! recover; then
+      if [ "$running" -eq 1 ]; then
+        if ! recover; then
+          running=0
+          mark_unhealthy
+          exit 1
+        fi
         running=0
-        mark_unhealthy
-        exit 1
       fi
-      running=0
 
       mv "$temporary" "$destination"
       trap - EXIT INT TERM
@@ -255,47 +229,38 @@ in
 
   config = {
   assertions = [{
-    assertion = config.virtualisation.docker.enable;
-    message = "Executor requires the Docker host group";
+    assertion = config.virtualisation.oci-containers.backend == "podman";
+    message = "Executor requires the Podman host group";
   }];
 
   dotfiles.labUpdate.requiredUnits = [ "executor.service" ];
 
-  systemd.services.executor = {
-    description = "Executor MCP gateway and capability manager";
-    wantedBy = [ "multi-user.target" ];
-    after = [ "docker.service" "network-online.target" ]
-      ++ lib.optionals offsite.enable [ "executor-backup-preflight.service" ];
-    requires = [ "docker.service" ]
-      ++ lib.optionals offsite.enable [ "executor-backup-preflight.service" ];
-    wants = [ "network-online.target" ];
-    environment.COMPOSE_PROJECT_NAME = "executor";
-    path = [ pkgs.curl pkgs.docker pkgs.docker-compose pkgs.jq ];
-    serviceConfig = {
-      Type = "oneshot";
-      RemainAfterExit = true;
-      User = "root";
-      Group = "root";
-      UMask = "0027";
-      TimeoutStartSec = "10min";
-      TimeoutStopSec = "2min";
-      ExecStartPre = "${prepare}/bin/executor-prepare";
-      ExecStart = "${compose} up --detach --remove-orphans";
-      ExecStartPost = pkgs.writeShellScript "executor-wait-healthy" ''
-        set -eu
-        for attempt in $(${pkgs.coreutils}/bin/seq 1 60); do
-          if ${pkgs.curl}/bin/curl --fail --silent --show-error --max-time 5 ${executor.healthUrl} \
-            | ${pkgs.jq}/bin/jq --exit-status '.status == "ok"' >/dev/null; then
-            exit 0
-          fi
-          ${pkgs.coreutils}/bin/sleep 5
-        done
-        ${compose} ps >&2
-        ${compose} logs --tail 100 >&2
-        exit 1
-      '';
-      ExecStop = "${compose} down";
+  virtualisation.oci-containers.containers.executor = {
+    serviceName = "executor";
+    image = executor.image;
+    pull = "missing";
+    ports = [ "${executor.bind}:4788" ];
+    environment = {
+      EXECUTOR_WEB_BASE_URL = executor.webBaseUrl;
+      EXECUTOR_ALLOW_LOCAL_NETWORK = lib.boolToString executor.allowLocalNetwork;
+      EXECUTOR_ALLOW_STDIO_MCP = lib.boolToString executor.allowStdioMcp;
     };
+    volumes = [ "${dataDirectory}:/data" ];
+    podman.sdnotify = "healthy";
+    extraOptions = [
+      "--health-cmd=bun -e fetch('http://127.0.0.1:4788/api/health').then(async r=>process.exit(r.ok&&(await r.json()).status==='ok'?0:1),()=>process.exit(1))"
+      "--health-interval=30s"
+      "--health-timeout=5s"
+      "--health-retries=5"
+      "--health-start-period=20s"
+    ];
+  };
+
+  systemd.services.executor = {
+    description = "Executor MCP gateway and capability manager (Podman)";
+    after = lib.optionals offsite.enable [ "executor-backup-preflight.service" ];
+    requires = lib.optionals offsite.enable [ "executor-backup-preflight.service" ];
+    serviceConfig.ExecStartPre = lib.mkBefore [ "${prepare}/bin/executor-prepare" ];
   };
 
   systemd.services.executor-backup-preflight = lib.mkIf offsite.enable {
@@ -321,7 +286,6 @@ in
   systemd.services.executor-backup = {
     description = "Back up complete Executor state and release manifest";
     after = [ "executor.service" ];
-    requires = [ "executor.service" ];
     serviceConfig = {
       Type = "oneshot";
       User = "root";
