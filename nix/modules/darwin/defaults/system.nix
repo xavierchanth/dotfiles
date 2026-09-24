@@ -50,6 +50,7 @@ in {
     dock = {
       autohide = true;
       expose-group-apps = true;
+      mru-spaces = false;
       show-recents = false;
       tilesize = 40;
     };
