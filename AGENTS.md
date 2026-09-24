@@ -4,6 +4,7 @@ This repository is a new port of the dotfiles setup. Treat it as the source of t
 
 ## Working Rules
 
+- Be direct and prefer stating the positive. Avoid negative framing unless it clarifies a real boundary.
 - Prefer adapting and extending the configuration in this repo instead of assuming the old setup should be copied over.
 - When configuring tools, it can sometimes be helpful to reference the `v1` branch in this repo as historical context.
 - Always ask the user before pulling, copying, or otherwise using config from the `v1` branch.

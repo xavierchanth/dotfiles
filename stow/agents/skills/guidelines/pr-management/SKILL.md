@@ -5,7 +5,7 @@ description: Prepare, review, update, stack, repair checks on, or monitor GitHub
 
 Manage PRs so intent, review evidence, and current state remain clear. Use GitHub CLI (`gh`) for GitHub reads and authorized writes. Scale work and explanation to the change.
 
-When a repository has an established [Version Control Team](../../orchestration/coordination-core/roles/version-control-coordinator.md), route PR preparation and publication through that owner. Recommend a PR when a coherent change is ready for review or would benefit from early feedback; create it within Xavier's explicit approval. For dependent changes, prefer native GitHub stacks through `gh stack` and verify membership using the stacked PR workflow below. Preserve existing approvals within their scope.
+When PR work would help after implementation, ask Xavier whether to handle it inline, hand it to an available [Version Control Team](../../orchestration/coordination-core/roles/version-control-coordinator.md), or leave it for later. Prepare or publish a PR only within the chosen scope and authorization. For dependent changes, prefer native GitHub stacks through `gh stack` and verify membership using the stacked PR workflow below. Preserve existing approvals within their scope.
 
 ## Choose a workflow
 

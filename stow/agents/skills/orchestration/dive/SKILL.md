@@ -30,7 +30,7 @@ Use subagents when available. Give every fresh stage agent the exact DIVE role r
 
 Use [Researcher](../coordination-core/roles/researcher.md) and [Explorer](../coordination-core/roles/explorer.md) for bounded evidence gathering. Helpers return evidence to the owning stage; that stage retains judgment and responsibility.
 
-Maintain one current design. Scale designers, supporting roles, implementers, Critique, and Verify work to the outcome. Run independent implementation concurrently and sequence dependencies. Route ordinary corrections through Implement and Verify; route approach-changing findings through Design and selected Critique.
+Maintain one current design. Scale designers, supporting roles, implementers, Critique, and Verify work to the outcome. Run independent implementation concurrently and sequence dependencies. Route ordinary corrections through Implement and Verify; route approach-changing findings through Design and selected Critique. Leave version-control decisions to Xavier after reporting the verified result.
 
 Stage and helper returns normally stay within the Team. Surface them when they are the agreed useful return, require Xavier's decision or access, change the approved approach, or materially affect confidence, dependencies, or the next action. DIVE completion requires the agreed terminal gate and a consolidated outcome; a stage agent finishing is an intermediate event.
 
@@ -48,7 +48,7 @@ Start Design with [design.md](references/design.md), the Team brief, relevant us
 
 Keep Design focused on investigation and a reviewable proposal. Prefer inline planning for simple proposals and use the requested presentation form when an artifact would help. When Design recommends documentation updates, experiments, or system changes beyond the assignment, present the proposal before implementation. Carry the current design into implementation and verification.
 
-Use the shared [focused-collaboration guidance](../coordination-core/references/handoff.md#focused-collaboration-with-xavier) to choose when work benefits from Xavier joining this Team directly. Within the Team, keep the DIVE Coordinator as Xavier's normal conversation partner. Offer a direct conversation with the Designer when focused discovery would help define the goal and the coordinator lacks enough context to mediate. Use that arrangement when Xavier requests or accepts it, and retain the Team's executive return to its owning Iris.
+Use the shared [focused-collaboration guidance](../coordination-core/references/handoff.md#focused-collaboration-with-xavier) to choose when work benefits from Xavier joining this Team directly. Within the Team, keep the DIVE Coordinator as Xavier's normal conversation partner. Offer a direct conversation with the Designer when focused discovery would help define the goal and the coordinator lacks enough context to mediate. Use that arrangement when Xavier requests or accepts it.
 
 Before implementation, establish that intent is explicit, consequential decisions are agreed, dependencies and coupled changes are understood, and acceptance checks are defined to verify the intended outcome.
 

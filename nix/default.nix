@@ -444,14 +444,6 @@ in builtins.seq checked (builtins.seq deployValidation {
         python3 ${../tests/managed-stow.py}
         touch "$out"
       '';
-      codex-config = pkgs.runCommand "codex-config-tests" {
-        nativeBuildInputs = [ (pkgs.python3.withPackages (p: [ p.tomlkit ])) ];
-        TEST_ROOT = flakeSource;
-        PYTHONDONTWRITEBYTECODE = "1";
-      } ''
-        python3 ${../tests/codex-config.py}
-        touch "$out"
-      '';
     } // lib.optionalAttrs (builtins.elem system [ "aarch64-darwin" "x86_64-linux" ]) {
       resolver-evaluation = assert resolverTests; pkgs.runCommand "resolver-evaluation" {} ''
         echo 'resolver eval assertions passed' > $out

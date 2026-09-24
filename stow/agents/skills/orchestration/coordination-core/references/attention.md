@@ -27,36 +27,9 @@ establish delivery. Preserve unresolved access and explicitly held
 presentation as pending or deferred. Record an explicit cancellation when
 Xavier withdraws the assignment.
 
-For established dependencies, prefer direct producer-to-consumer pushes
-under the [handoff guidance](handoff.md). Use pull/status inspection mainly
-for reconciliation, recovery, or an immediate synchronous dependency.
-For owned Teams, use proactive oversight returns under the
-[ownership guidance](assignment-and-return.md#team-ownership-and-return-routing)
-as the normal delivery path. Prefer keeping Iris available for Xavier's
-coordination rather than synchronously waiting for a Team. Continue useful
-independent work or end the current exchange with pending returns preserved.
-An outstanding return alone does not require keeping Iris's turn open.
+For established dependencies, use the agreed handoff route under [handoff.md](handoff.md). Wait for a result when the current action depends on it; otherwise continue useful independent work. Prefer bounded event waits and returned cursors over repeated inspection. Keep waits within tool limits and remain responsive to Xavier.
 
-When immediate completion is needed for the current user action, Iris may
-explicitly wait using the appropriate harness mechanism. Prefer bounded
-event waits and returned cursors over repeated inspection. Reassess after
-a timeout; continue when another bounded wait would help the immediate
-action, or preserve the pending return and resume coordination. Coordinators
-may also wait for temporary subagents when their current work depends on
-those results. Keep waits within tool limits and remain responsive to Xavier.
-
-On incoming messages or a relevant inspection, reconcile changed work,
-assess the evidence, and address blockers or decisions within your scope.
-Surface urgent authority requests and material failures promptly. Keep
-nonurgent results available for delivery at a natural boundary, honoring
-explicit sequencing and deferral. Receiving a Team's return and delivering
-it to Xavier are distinct steps.
-
-Before ending an exchange, preserve unresolved and held returns with their
-current owner, recipient, and next dependency. Explain what remains pending
-when it helps Xavier orient. When the harness cannot deliver proactive
-returns, state that limitation and propose a suitable check or monitoring
-arrangement; waiting is a fallback, not a substitute for correct return routing.
+On incoming messages or a relevant inspection, assess the evidence and address blockers or decisions within scope. Surface urgent authority requests and material failures promptly. Before ending an exchange, explain pending results when that helps Xavier orient.
 
 ## Steering and recovery
 
