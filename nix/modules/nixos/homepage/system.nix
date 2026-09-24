@@ -73,7 +73,7 @@ in
     };
     allowedHosts = lib.mkOption {
       type = lib.types.nonEmptyListOf (lib.types.strMatching "^[A-Za-z0-9.-]+(:[0-9]+)?$");
-      default = [ "lab.xavierchanth.xyz" ];
+      default = [ "lab.xavierchanth.xyz" "lab.xavierchanth.xyz:${toString config.dotfiles.serviceGateway.httpsPort}" ];
       description = "Canonical ingress hosts accepted by Homepage";
     };
     serviceNames = lib.mkOption {
@@ -111,5 +111,7 @@ in
         "--health-start-period=20s"
       ];
     };
+
+    systemd.services.homepage.serviceConfig.TimeoutStartSec = lib.mkForce "10min";
   };
 }

@@ -105,15 +105,21 @@ def config_sha256(config: dict[str, Any]) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
-def caddy_healthy(args: argparse.Namespace) -> bool:
+def gateway_health_error(args: argparse.Namespace) -> str | None:
     if run([command("systemctl"), "is-active", "--quiet", "caddy.service"], check=False).returncode != 0:
-        return False
+        return "Caddy service is inactive"
     url = f"https://{args.health_host}:{args.port}{args.health_path}"
     result = run([
-        command("curl"), "--silent", "--show-error", "--fail", "--max-time", "5",
+        command("curl"), "--silent", "--show-error", "--max-time", "5",
+        "--output", "/dev/null", "--write-out", "%{http_code}",
         "--cacert", args.ca_certificate, "--resolve", f"{args.health_host}:{args.port}:{args.bind_address}", url,
     ], check=False)
-    return result.returncode == 0
+    if result.returncode != 0:
+        return "HTTPS gateway health probe failed"
+    status = result.stdout.strip()
+    if not status.isdigit() or not 200 <= int(status) < 300:
+        return f"HTTPS gateway health probe returned HTTP {status or 'unknown'}"
+    return None
 
 
 def read_receipt(path: Path) -> dict[str, Any] | None:
@@ -254,8 +260,9 @@ def reconcile_drain(args: argparse.Namespace) -> None:
 def inspect(args: argparse.Namespace, *, require_dns: bool) -> tuple[str, str, dict[str, Any]]:
     desired = desired_config(Path(args.config), args.service, args.target)
     drained = marker_present(Path(args.drain_marker))
-    if not caddy_healthy(args):
-        return "caddy-unhealthy", "Caddy is unavailable", {}
+    gateway_error = gateway_health_error(args)
+    if gateway_error is not None:
+        return "gateway-unhealthy", gateway_error, {}
     try:
         status = tailscale_status()
         current = live_config()
@@ -296,8 +303,9 @@ def apply_locked(args: argparse.Namespace, *, clear_marker: bool) -> int:
             if marker.parent.exists():
                 fsync_directory(marker.parent)
         desired = desired_config(Path(args.config), args.service, args.target)
-        if not caddy_healthy(args):
-            raise GatewayError("Caddy is unavailable")
+        gateway_error = gateway_health_error(args)
+        if gateway_error is not None:
+            raise GatewayError(gateway_error)
         tailscale_status()
         run([command("tailscale"), "serve", "set-config", "--all", args.config])
         run([command("tailscale"), "serve", "advertise", args.service])

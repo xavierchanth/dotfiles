@@ -185,6 +185,7 @@
      assert container.ports == [ "127.0.0.1:4788:4788" ];
      assert container.volumes == [ "/var/lib/executor/data:/data" ];
      assert container.podman.sdnotify == "healthy";
+     assert lib.any (lib.hasPrefix "--health-cmd=[\"bun\",\"-e\",") container.extraOptions;
      assert builtins.elem "executor.service" hades.dotfiles.labUpdate.requiredUnits;
      assert !executor.offsiteBackup.enable;
      assert !(builtins.elem "executor-backup-preflight.service" hades.systemd.services.executor.requires);
