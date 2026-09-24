@@ -248,7 +248,7 @@ in
     volumes = [ "${dataDirectory}:/data" ];
     podman.sdnotify = "healthy";
     extraOptions = [
-      "--health-cmd=bun -e 'fetch(\"http://127.0.0.1:4788/api/health\").then(async r=>process.exit(r.ok&&(await r.json()).status===\"ok\"?0:1),()=>process.exit(1))'"
+      "--health-cmd=${builtins.toJSON [ "bun" "-e" ''fetch("http://127.0.0.1:4788/api/health").then(async response => process.exit(response.ok && (await response.json()).status === "ok" ? 0 : 1)).catch(() => process.exit(1))'' ]}"
       "--health-interval=30s"
       "--health-timeout=5s"
       "--health-retries=5"

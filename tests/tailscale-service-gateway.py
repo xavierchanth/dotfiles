@@ -35,7 +35,10 @@ if state.get("fail_cli") == name or state.get("fail_cli") == "all":
 
 if name == "curl":
     save()
-    sys.exit(0 if state.get("caddy_healthy", True) else 1)
+    if not state.get("caddy_healthy", True):
+        sys.exit(7)
+    print(state.get("gateway_http_status", "200"), end="")
+    sys.exit(0)
 
 if name == "systemctl":
     if args[:2] == ["is-active", "--quiet"]:
@@ -229,8 +232,12 @@ with tempfile.TemporaryDirectory(prefix="svc-lab-tests.") as raw_tmp:
 
     # Caddy and CLI failures fail closed.
     reset(caddy_active=False)
-    assert invoke("apply", succeeds=False)["state"] == "failed"
+    assert invoke("apply", succeeds=False)["message"] == "Caddy service is inactive"
     assert not receipt.exists()
+    reset(gateway_http_status="400")
+    probe = invoke("status", succeeds=False)
+    assert probe["state"] == "gateway-unhealthy"
+    assert probe["message"] == "HTTPS gateway health probe returned HTTP 400"
 
     # A CLI JSON schema mismatch fails closed.
     reset(backend="Unexpected")
