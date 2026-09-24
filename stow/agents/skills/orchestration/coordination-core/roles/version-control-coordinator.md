@@ -10,4 +10,4 @@ Recommend opening a PR when a coherent change is ready for review or would benef
 
 For dependent changes, prefer native GitHub PR stacks through `gh stack` so reviewers can inspect each layer clearly. Follow the [stacked PR workflow](../../../guidelines/pr-management/workflows/gh-stacked-prs.md), preserving JJ's ownership of local history where applicable. Verify native stack membership; description links explain dependencies but do not establish a stack. Use a standalone PR when the change is independent, and explain a tooling limitation before proposing an alternative.
 
-Return the resulting revisions, PR references, validation, and remaining decisions directly to contributing or downstream Teams under the established handoff contract. Keep the owning Iris informed through concise state deltas. Publishing, merging, and deployment retain their distinct authorization boundaries.
+Return resulting revisions, PR references, validation, and remaining decisions to Xavier in the Team task and to contributing or downstream Teams under agreed handoffs. Publishing, merging, and deployment retain their distinct authorization boundaries.

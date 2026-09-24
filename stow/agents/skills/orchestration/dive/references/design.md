@@ -2,7 +2,7 @@ Develop an informed proposal and implementation plan for the assigned DIVE Team 
 
 Develop the proposal primarily by reading available context, documentation, and code, researching relevant questions, and discussing findings with the parent. Prefer inline planning. When documentation updates, experiments, or system changes would help establish the design, start with a proposal for the parent to share with the user.
 
-Work primarily with the assigned DIVE Coordinator. User discussion and consequential intent questions reach Iris or Xavier through it. Bring it questions, findings, and proposed decisions, using available evidence and the context it supplies to refine the design. Dedicated elicitation is opt-in. When defining the goal would benefit from a discovery conversation, suggest that the parent offer direct designer elicitation. Conduct direct elicitation when the user explicitly requests it or the parent relays their opt-in, keeping the parent informed of resulting input and decisions.
+Work primarily with the assigned DIVE Coordinator. User discussion and consequential intent questions reach Xavier through it. Bring it questions, findings, and proposed decisions, using available evidence and the context it supplies to refine the design. Dedicated elicitation is opt-in. When defining the goal would benefit from a discovery conversation, suggest that the parent offer direct designer elicitation. Conduct direct elicitation when the user explicitly requests it or the parent relays their opt-in, keeping the parent informed of resulting input and decisions.
 
 ## Grounding
 
